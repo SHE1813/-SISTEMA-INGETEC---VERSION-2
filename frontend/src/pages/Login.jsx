@@ -1,244 +1,269 @@
+import { useState } from "react";
+import axios from "axios";
+import AuthForm from "../components/AuthForm";
+import RegisterAdmin from "../components/RegisterAdmin";
 import {
-  useState
-} from "react"
+  FaChartLine,
+  FaUsers,
+  FaShieldAlt
+} from "react-icons/fa";
+import { useNavigate } from "react-router-dom";
 
-import axios from "axios"
+export default function Login() {
 
-import {
-  useNavigate
-} from "react-router-dom"
+  const navigate = useNavigate();
 
-function Login() {
+  const API = "http://127.0.0.1:3000";
 
-  const navigate = useNavigate()
+  const [loading, setLoading] = useState(false);
 
-  const [isRegister, setIsRegister] =
-    useState(false)
+  const [showRegister, setShowRegister] = useState(false);
 
-  const [email, setEmail] = useState("")
+  const [email, setEmail] = useState("");
 
-  const [password, setPassword] =
-    useState("")
+  const [password, setPassword] = useState("");
 
-  // =========================
+  // ===========================
   // LOGIN
-  // =========================
+  // ===========================
 
   const login = async (e) => {
 
-    e.preventDefault()
+    e.preventDefault();
+
+    setLoading(true);
 
     try {
 
-      const response = await axios.post(
+        const { data } = await axios.post(`${API}/login`, {
+            email,
+            password
+        });
 
-        "https://ingete-backend.onrender.com/login",
+        console.log("Respuesta:", data);
 
-        {
-          email,
-          password
+        if (!data.success) {
+
+            alert(data.message);
+            setLoading(false);
+            return;
+
         }
 
-      )
-
-      if (response.data.success) {
-
         localStorage.setItem(
+            "user",
+            JSON.stringify(data.user)
+        );
 
-          "token",
+        console.log(localStorage.getItem("user"));
 
-          response.data.token
-
-        )
-
-        localStorage.setItem(
-
-          "user",
-
-          JSON.stringify(
-            response.data.user
-          )
-
-        )
-
-        alert("Login correcto")
-
-        navigate("/dashboard")
-
-      }
+        navigate("/dashboard");
 
     } catch (error) {
 
-      alert("Credenciales incorrectas")
+        console.log(error);
+        alert("No fue posible iniciar sesión.");
 
-      console.log(error)
+    } finally {
+
+        setLoading(false);
 
     }
 
-  }
+};
 
-  // =========================
-  // REGISTER
-  // =========================
+  // ===========================
+  // REGISTRAR ADMINISTRADOR
+  // ===========================
 
-  const register = async (e) => {
+  const registerAdmin = async (form) => {
 
-    e.preventDefault()
+    setLoading(true);
 
     try {
 
-      const response = await axios.post(
+      const { data } = await axios.post(
 
-        "https://ingete-backend.onrender.com/register",
+        `${API}/register`,
 
-        {
-          email,
-          password
-        }
+        form
 
-      )
+      );
 
-      if (response.data.success) {
+      alert(data.message);
 
-        alert(
-          "Usuario registrado correctamente"
-        )
+      if (data.success) {
 
-        setIsRegister(false)
-
-        setEmail("")
-        setPassword("")
+        setShowRegister(false);
 
       }
 
-    } catch (error) {
+    }
 
-      alert("Error al registrar el usuario")
+    catch (error) {
 
-      console.log(error)
+      console.log(error);
+
+      alert("Error al registrar administrador.");
 
     }
 
-  }
+    setLoading(false);
+
+  };
 
   return (
 
-    <div className="min-h-screen bg-gradient-to-r from-blue-900 to-blue-600 flex items-center justify-center p-5">
+    <div className="min-h-screen grid lg:grid-cols-2 bg-slate-100">
 
-      <form
-        onSubmit={
-          isRegister
-            ? register
-            : login
-        }
-        className="bg-white p-10 rounded-3xl shadow-2xl w-full max-w-md"
-      >
+      {/* ==========================
+          PANEL IZQUIERDO
+      ========================== */}
 
-        <div className="text-center">
+      <section className="hidden lg:flex relative overflow-hidden">
 
-          <h1 className="text-5xl font-bold text-blue-800">
-            Ingetec
+        <img
+
+          src="https://images.unsplash.com/photo-1504307651254-35680f356dfd?auto=format&fit=crop&w=1400&q=80"
+
+          alt=""
+
+          className="absolute inset-0 w-full h-full object-cover"
+
+        />
+
+        <div className="absolute inset-0 bg-blue-950/80"></div>
+
+        <div className="relative z-10 flex flex-col justify-center px-16 text-white">
+
+          <h1 className="text-6xl font-black tracking-wide">
+
+            INGETEC
+
           </h1>
 
-          <p className="text-gray-500 mt-3 mb-8">
+          <div className="w-24 h-1 bg-blue-400 rounded-full mt-6"></div>
 
-            {isRegister
-              ? "Crear nueva cuenta"
-              : "Sistema Web de Monitoreo y Control"
-            }
+          <h2 className="mt-8 text-4xl font-bold leading-tight">
 
-          </p>
+            Sistema Integral para la
+
+            <br />
+
+            Supervisión y Control
+
+            <br />
+
+            de Proyectos
+
+            <span className="text-blue-300">
+
+              {" "}de Ingeniería
+
+            </span>
+
+          </h2>
+
+          <div className="space-y-8 mt-16">
+
+            <div className="flex gap-5">
+
+              <FaChartLine size={28}/>
+
+              <div>
+
+                <h3 className="font-semibold text-xl">
+
+                  Administración de proyectos
+
+                </h3>
+
+                <p className="text-blue-200">
+
+                  Control total del avance.
+
+                </p>
+
+              </div>
+
+            </div>
+
+            <div className="flex gap-5">
+
+              <FaUsers size={28}/>
+
+              <div>
+
+                <h3 className="font-semibold text-xl">
+
+                  Gestión del personal
+
+                </h3>
+
+                <p className="text-blue-200">
+
+                  Organización de supervisores e ingenieros.
+
+                </p>
+
+              </div>
+
+            </div>
+
+            <div className="flex gap-5">
+
+              <FaShieldAlt size={28}/>
+
+              <div>
+
+                <h3 className="font-semibold text-xl">
+
+                  Seguridad
+
+                </h3>
+
+                <p className="text-blue-200">
+
+                  Acceso mediante roles.
+
+                </p>
+
+              </div>
+
+            </div>
+
+          </div>
 
         </div>
 
-        {/* EMAIL */}
+      </section>
 
-        <div className="mb-5">
+      {/* PANEL DERECHO */}
 
-          <label className="block text-gray-700 mb-2">
-            Correo electrónico
-          </label>
-
-          <input
-            type="email"
-            placeholder="Ingrese su correo"
-            value={email}
-            onChange={(e) =>
-              setEmail(e.target.value)
-            }
-            className="w-full border border-gray-300 rounded-xl p-4 outline-none focus:border-blue-600"
-            required
-          />
-
-        </div>
-
-        {/* PASSWORD */}
-
-        <div className="mb-8">
-
-          <label className="block text-gray-700 mb-2">
-            Contraseña
-          </label>
-
-          <input
-            type="password"
-            placeholder="Ingrese su contraseña"
-            value={password}
-            onChange={(e) =>
-              setPassword(e.target.value)
-            }
-            className="w-full border border-gray-300 rounded-xl p-4 outline-none focus:border-blue-600"
-            required
-          />
-
-        </div>
-
-        {/* BOTÓN */}
-
-        <button
-          type="submit"
-          className="w-full bg-blue-700 hover:bg-blue-800 text-white py-4 rounded-xl text-lg font-bold transition duration-300"
-        >
-
-          {isRegister
-            ? "Crear Cuenta"
-            : "Iniciar Sesión"
-          }
-
-        </button>
-
-        {/* CAMBIAR */}
-
-        <p className="text-center mt-6 text-gray-600">
-
-          {isRegister
-            ? "¿Ya tienes cuenta?"
-            : "¿No tienes cuenta?"
-          }
-
-          <button
-            type="button"
-            onClick={() =>
-              setIsRegister(!isRegister)
-            }
-            className="text-blue-700 font-bold ml-2"
-          >
-
-            {isRegister
-              ? "Iniciar sesión"
-              : "Crear cuenta"
-            }
-
-          </button>
-
-        </p>
-
-      </form>
+      <section className="flex items-center justify-center p-10">
+        {
+          showRegister
+            ?
+            <RegisterAdmin
+              loading={loading}
+              onSubmit={registerAdmin}
+              goLogin={()=>setShowRegister(false)}
+            />
+            :
+            <AuthForm
+              email={email}
+              setEmail={setEmail}
+              password={password}
+              setPassword={setPassword}
+              loading={loading}
+              onSubmit={login}
+              goRegister={()=>setShowRegister(true)}
+            />
+        }
+      </section>
 
     </div>
 
-  )
+  );
 
 }
-
-export default Login
