@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import API from "../config/api";
+
 import {
   FaUsers,
   FaHome,
@@ -17,7 +19,6 @@ import { Link, useNavigate } from "react-router-dom";
 
 export default function Personal() {
   const navigate = useNavigate();
-  const API = "http://127.0.0.1:3000";
 
   let user = {};
 

@@ -9,6 +9,7 @@ import {
 } from "react-router-dom";
 
 import axios from "axios";
+import API from "../config/api";
 
 import {
   FaProjectDiagram,
@@ -85,7 +86,7 @@ function Dashboard() {
       const token = localStorage.getItem("token");
 
       const response = await axios.get(
-        "http://127.0.0.1:3000/dashboard",
+           `${API}/dashboard`,
         {
           headers: {
             Authorization: `Bearer ${token}`

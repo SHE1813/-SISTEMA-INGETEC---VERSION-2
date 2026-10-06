@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import API from "../config/api";
 
 import {
   FaSearch,
@@ -11,8 +12,6 @@ import {
 
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
-
-const API = "http://127.0.0.1:3000";
 
 export default function Tasks() {
 

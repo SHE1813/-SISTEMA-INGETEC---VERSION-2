@@ -4,6 +4,7 @@ import {
 } from "react";
 
 import axios from "axios";
+import API from "../config/api";
 
 import {
   FaChartBar,
@@ -23,8 +24,6 @@ import {
 import Sidebar from "../components/Sidebar";
 import Navbar from "../components/Navbar";
 
-
-const API = "http://127.0.0.1:3000";
 
 
 function Reports() {

@@ -1,8 +1,10 @@
 import { useState } from "react";
 import axios from "axios";
+import API from "../config/api";
 
 import AuthForm from "../components/AuthForm";
 import RegisterAdmin from "../components/RegisterAdmin";
+
 
 import {
   FaChartLine,

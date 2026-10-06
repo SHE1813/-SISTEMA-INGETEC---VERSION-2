@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
+import API from "../config/api";
 import {
   FaSearch,
   FaEdit,
@@ -14,7 +15,6 @@ import {
 } from "react-icons/fa";
 import { Link, useNavigate } from "react-router-dom";
 
-const API = "http://127.0.0.1:3000";
 
 export default function EncargadoProjects() {
 
