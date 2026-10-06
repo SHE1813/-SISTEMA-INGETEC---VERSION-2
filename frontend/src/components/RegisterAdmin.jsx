@@ -15,6 +15,7 @@ import {
 } from "react-icons/fa";
 
 import axios from "axios";
+import API from "../config/api";
 
 export default function RegisterAdmin({
   onSubmit,
