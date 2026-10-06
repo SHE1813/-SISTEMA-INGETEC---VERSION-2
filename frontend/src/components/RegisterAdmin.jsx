@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
 import {
   FaUser,
   FaEnvelope,
@@ -9,105 +10,499 @@ import {
   FaEye,
   FaEyeSlash,
   FaArrowLeft,
-  FaUserShield
+  FaUserShield,
+  FaExclamationTriangle
 } from "react-icons/fa";
 
+import axios from "axios";
+
 export default function RegisterAdmin({
-
   onSubmit,
-
   goLogin,
-
   loading
-
 }) {
 
-  const [showPassword,setShowPassword]=useState(false);
+  // =====================================================
+  // API
+  // =====================================================
 
-  const [showConfirm,setShowConfirm]=useState(false);
+  const API = "http://127.0.0.1:3000";
 
-  const [form,setForm]=useState({
+  // =====================================================
+  // ESTADOS
+  // =====================================================
 
-    nombres:"",
-    apellidos:"",
-    telefono:"",
-    cargo:"",
-    area:"",
-    email:"",
-    password:"",
-    confirmPassword:""
+  const [showPassword, setShowPassword] =
+    useState(false);
+
+  const [showConfirm, setShowConfirm] =
+    useState(false);
+
+  const [checkingSetup, setCheckingSetup] =
+    useState(true);
+
+  const [adminExists, setAdminExists] =
+    useState(false);
+
+  const [form, setForm] = useState({
+
+    nombres: "",
+    apellidos: "",
+    telefono: "",
+    cargo: "",
+    area: "",
+    email: "",
+    password: "",
+    confirmPassword: ""
 
   });
 
-  function handleChange(e){
+  // =====================================================
+  // COMPROBAR SI YA EXISTE ADMINISTRADOR
+  // =====================================================
+
+  useEffect(() => {
+
+    checkAdmin();
+
+  }, []);
+
+  const checkAdmin = async () => {
+
+    try {
+
+      setCheckingSetup(true);
+
+      const response =
+        await axios.get(
+          `${API}/setup`
+        );
+
+      console.log(
+        "Estado del sistema:",
+        response.data
+      );
+
+      setAdminExists(
+        response.data.adminExists === true
+      );
+
+    }
+
+    catch (error) {
+
+      console.error(
+        "Error comprobando administrador:",
+        error
+      );
+
+      // Por seguridad, si no podemos comprobar
+      // el estado del sistema, NO permitimos
+      // crear un administrador.
+
+      setAdminExists(true);
+
+    }
+
+    finally {
+
+      setCheckingSetup(false);
+
+    }
+
+  };
+
+  // =====================================================
+  // CAMBIAR INPUT
+  // =====================================================
+
+  function handleChange(e) {
 
     setForm({
 
       ...form,
 
-      [e.target.name]:e.target.value
+      [e.target.name]:
+        e.target.value
 
     });
 
   }
 
-  function submit(e){
+  // =====================================================
+  // ENVIAR FORMULARIO
+  // =====================================================
+
+  function submit(e) {
 
     e.preventDefault();
 
-    if(form.password!==form.confirmPassword){
+    // -----------------------------------------------
+    // SEGURIDAD
+    // -----------------------------------------------
 
-      alert("Las contraseñas no coinciden");
+    if (adminExists) {
+
+      alert(
+        "Ya existe un administrador. No es posible crear otro."
+      );
 
       return;
 
     }
 
-    onSubmit(form);
+    // -----------------------------------------------
+    // VALIDAR CONTRASEÑA
+    // -----------------------------------------------
+
+    if (
+      form.password !==
+      form.confirmPassword
+    ) {
+
+      alert(
+        "Las contraseñas no coinciden."
+      );
+
+      return;
+
+    }
+
+    // -----------------------------------------------
+    // VALIDAR LONGITUD
+    // -----------------------------------------------
+
+    if (
+      form.password.length < 8
+    ) {
+
+      alert(
+        "La contraseña debe tener al menos 8 caracteres."
+      );
+
+      return;
+
+    }
+
+    // -----------------------------------------------
+    // NO ENVIAR confirmPassword
+    // -----------------------------------------------
+
+    const dataToSend = {
+
+      nombres:
+        form.nombres,
+
+      apellidos:
+        form.apellidos,
+
+      telefono:
+        form.telefono,
+
+      cargo:
+        form.cargo,
+
+      area:
+        form.area,
+
+      email:
+        form.email,
+
+      password:
+        form.password
+
+    };
+
+    onSubmit(
+      dataToSend
+    );
 
   }
 
-  return(
+  // =====================================================
+  // CARGANDO COMPROBACIÓN
+  // =====================================================
+
+  if (checkingSetup) {
+
+    return (
+
+      <div
+        className="
+          bg-white
+          rounded-3xl
+          shadow-2xl
+          p-10
+          w-full
+          max-w-2xl
+          text-center
+        "
+      >
+
+        <div
+          className="
+            w-20
+            h-20
+            bg-blue-100
+            rounded-full
+            flex
+            items-center
+            justify-center
+            mx-auto
+          "
+        >
+
+          <FaUserShield
+            className="
+              text-4xl
+              text-blue-700
+            "
+          />
+
+        </div>
+
+        <h2
+          className="
+            mt-6
+            text-2xl
+            font-bold
+          "
+        >
+          Verificando configuración
+        </h2>
+
+        <p
+          className="
+            text-gray-500
+            mt-3
+          "
+        >
+          Comprobando si el sistema ya tiene un administrador...
+        </p>
+
+      </div>
+
+    );
+
+  }
+
+  // =====================================================
+  // SI YA EXISTE ADMINISTRADOR
+  // =====================================================
+
+  if (adminExists) {
+
+    return (
+
+      <div
+        className="
+          bg-white
+          rounded-3xl
+          shadow-2xl
+          p-10
+          w-full
+          max-w-2xl
+          text-center
+        "
+      >
+
+        <div
+          className="
+            w-24
+            h-24
+            bg-yellow-100
+            rounded-full
+            flex
+            items-center
+            justify-center
+            mx-auto
+          "
+        >
+
+          <FaExclamationTriangle
+            className="
+              text-5xl
+              text-yellow-600
+            "
+          />
+
+        </div>
+
+        <h2
+          className="
+            mt-6
+            text-3xl
+            font-bold
+            text-gray-800
+          "
+        >
+          Administrador ya registrado
+        </h2>
+
+        <p
+          className="
+            text-gray-500
+            mt-4
+            leading-relaxed
+          "
+        >
+          El sistema ya tiene un administrador
+          registrado. Por motivos de seguridad,
+          no se permite crear otro administrador
+          desde esta pantalla.
+        </p>
+
+        <div
+          className="
+            bg-blue-50
+            rounded-xl
+            p-5
+            mt-8
+          "
+        >
+
+          <p
+            className="
+              text-blue-700
+              font-semibold
+            "
+          >
+            Utilice el botón de inicio de sesión
+            para ingresar al sistema.
+          </p>
+
+        </div>
+
+        <button
+
+          type="button"
+
+          onClick={goLogin}
+
+          className="
+            mt-8
+            flex
+            items-center
+            justify-center
+            gap-2
+            bg-blue-700
+            text-white
+            px-8
+            py-4
+            rounded-xl
+            hover:bg-blue-800
+            w-full
+          "
+
+        >
+
+          <FaArrowLeft />
+
+          Volver al inicio de sesión
+
+        </button>
+
+      </div>
+
+    );
+
+  }
+
+  // =====================================================
+  // FORMULARIO
+  // =====================================================
+
+  return (
 
     <form
 
       onSubmit={submit}
 
-      className="bg-white rounded-3xl shadow-2xl p-10 w-full max-w-2xl"
+      className="
+        bg-white
+        rounded-3xl
+        shadow-2xl
+        p-10
+        w-full
+        max-w-2xl
+      "
 
     >
 
+      {/* ================================================
+          CABECERA
+      ================================================ */}
+
       <div className="text-center">
 
-        <div className="w-24 h-24 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
+        <div
+          className="
+            w-24
+            h-24
+            bg-blue-100
+            rounded-full
+            flex
+            items-center
+            justify-center
+            mx-auto
+          "
+        >
 
           <FaUserShield
-
-            className="text-5xl text-blue-700"
-
+            className="
+              text-5xl
+              text-blue-700
+            "
           />
 
         </div>
 
-        <h2 className="mt-6 text-4xl font-bold">
-
+        <h2
+          className="
+            mt-6
+            text-4xl
+            font-bold
+          "
+        >
           Registrar Administrador
-
         </h2>
 
-        <p className="text-gray-500 mt-3">
-
+        <p
+          className="
+            text-gray-500
+            mt-3
+          "
+        >
           Primera configuración del sistema.
-
         </p>
 
       </div>
 
-      <div className="grid md:grid-cols-2 gap-5 mt-10">
+      {/* ================================================
+          DATOS PERSONALES
+      ================================================ */}
+
+      <div
+        className="
+          grid
+          md:grid-cols-2
+          gap-5
+          mt-10
+        "
+      >
+
+        {/* NOMBRES */}
 
         <div className="relative">
 
-          <FaUser className="absolute left-4 top-5 text-gray-400"/>
+          <FaUser
+            className="
+              absolute
+              left-4
+              top-5
+              text-gray-400
+            "
+          />
 
           <input
 
@@ -115,21 +510,43 @@ export default function RegisterAdmin({
 
             placeholder="Nombres"
 
-            value={form.nombres}
+            value={
+              form.nombres
+            }
 
-            onChange={handleChange}
+            onChange={
+              handleChange
+            }
 
             required
 
-            className="w-full border rounded-xl py-4 pl-12"
+            className="
+              w-full
+              border
+              rounded-xl
+              py-4
+              pl-12
+              focus:outline-none
+              focus:ring-2
+              focus:ring-blue-500
+            "
 
           />
 
         </div>
 
+        {/* APELLIDOS */}
+
         <div className="relative">
 
-          <FaUser className="absolute left-4 top-5 text-gray-400"/>
+          <FaUser
+            className="
+              absolute
+              left-4
+              top-5
+              text-gray-400
+            "
+          />
 
           <input
 
@@ -137,21 +554,43 @@ export default function RegisterAdmin({
 
             placeholder="Apellidos"
 
-            value={form.apellidos}
+            value={
+              form.apellidos
+            }
 
-            onChange={handleChange}
+            onChange={
+              handleChange
+            }
 
             required
 
-            className="w-full border rounded-xl py-4 pl-12"
+            className="
+              w-full
+              border
+              rounded-xl
+              py-4
+              pl-12
+              focus:outline-none
+              focus:ring-2
+              focus:ring-blue-500
+            "
 
           />
 
         </div>
 
+        {/* TELÉFONO */}
+
         <div className="relative">
 
-          <FaPhone className="absolute left-4 top-5 text-gray-400"/>
+          <FaPhone
+            className="
+              absolute
+              left-4
+              top-5
+              text-gray-400
+            "
+          />
 
           <input
 
@@ -159,21 +598,43 @@ export default function RegisterAdmin({
 
             placeholder="Teléfono"
 
-            value={form.telefono}
+            value={
+              form.telefono
+            }
 
-            onChange={handleChange}
+            onChange={
+              handleChange
+            }
 
             required
 
-            className="w-full border rounded-xl py-4 pl-12"
+            className="
+              w-full
+              border
+              rounded-xl
+              py-4
+              pl-12
+              focus:outline-none
+              focus:ring-2
+              focus:ring-blue-500
+            "
 
           />
 
         </div>
 
+        {/* CARGO */}
+
         <div className="relative">
 
-          <FaBriefcase className="absolute left-4 top-5 text-gray-400"/>
+          <FaBriefcase
+            className="
+              absolute
+              left-4
+              top-5
+              text-gray-400
+            "
+          />
 
           <input
 
@@ -181,21 +642,43 @@ export default function RegisterAdmin({
 
             placeholder="Cargo"
 
-            value={form.cargo}
+            value={
+              form.cargo
+            }
 
-            onChange={handleChange}
+            onChange={
+              handleChange
+            }
 
             required
 
-            className="w-full border rounded-xl py-4 pl-12"
+            className="
+              w-full
+              border
+              rounded-xl
+              py-4
+              pl-12
+              focus:outline-none
+              focus:ring-2
+              focus:ring-blue-500
+            "
 
           />
 
         </div>
 
+        {/* ÁREA */}
+
         <div className="relative">
 
-          <FaBuilding className="absolute left-4 top-5 text-gray-400"/>
+          <FaBuilding
+            className="
+              absolute
+              left-4
+              top-5
+              text-gray-400
+            "
+          />
 
           <input
 
@@ -203,21 +686,43 @@ export default function RegisterAdmin({
 
             placeholder="Área"
 
-            value={form.area}
+            value={
+              form.area
+            }
 
-            onChange={handleChange}
+            onChange={
+              handleChange
+            }
 
             required
 
-            className="w-full border rounded-xl py-4 pl-12"
+            className="
+              w-full
+              border
+              rounded-xl
+              py-4
+              pl-12
+              focus:outline-none
+              focus:ring-2
+              focus:ring-blue-500
+            "
 
           />
 
         </div>
 
+        {/* CORREO */}
+
         <div className="relative">
 
-          <FaEnvelope className="absolute left-4 top-5 text-gray-400"/>
+          <FaEnvelope
+            className="
+              absolute
+              left-4
+              top-5
+              text-gray-400
+            "
+          />
 
           <input
 
@@ -227,13 +732,26 @@ export default function RegisterAdmin({
 
             placeholder="Correo"
 
-            value={form.email}
+            value={
+              form.email
+            }
 
-            onChange={handleChange}
+            onChange={
+              handleChange
+            }
 
             required
 
-            className="w-full border rounded-xl py-4 pl-12"
+            className="
+              w-full
+              border
+              rounded-xl
+              py-4
+              pl-12
+              focus:outline-none
+              focus:ring-2
+              focus:ring-blue-500
+            "
 
           />
 
@@ -241,27 +759,65 @@ export default function RegisterAdmin({
 
       </div>
 
-      <div className="grid md:grid-cols-2 gap-5 mt-5">
+      {/* ================================================
+          CONTRASEÑAS
+      ================================================ */}
+
+      <div
+        className="
+          grid
+          md:grid-cols-2
+          gap-5
+          mt-5
+        "
+      >
+
+        {/* CONTRASEÑA */}
 
         <div className="relative">
 
-          <FaLock className="absolute left-4 top-5 text-gray-400"/>
+          <FaLock
+            className="
+              absolute
+              left-4
+              top-5
+              text-gray-400
+            "
+          />
 
           <input
 
-            type={showPassword?"text":"password"}
+            type={
+              showPassword
+                ? "text"
+                : "password"
+            }
 
             name="password"
 
             placeholder="Contraseña"
 
-            value={form.password}
+            value={
+              form.password
+            }
 
-            onChange={handleChange}
+            onChange={
+              handleChange
+            }
 
             required
 
-            className="w-full border rounded-xl py-4 pl-12 pr-12"
+            className="
+              w-full
+              border
+              rounded-xl
+              py-4
+              pl-12
+              pr-12
+              focus:outline-none
+              focus:ring-2
+              focus:ring-blue-500
+            "
 
           />
 
@@ -269,49 +825,79 @@ export default function RegisterAdmin({
 
             type="button"
 
-            className="absolute right-4 top-5"
+            className="
+              absolute
+              right-4
+              top-5
+              text-gray-500
+            "
 
-            onClick={()=>setShowPassword(!showPassword)}
+            onClick={() =>
+              setShowPassword(
+                !showPassword
+              )
+            }
 
           >
 
             {
-
               showPassword
-
-              ?
-
-              <FaEyeSlash/>
-
-              :
-
-              <FaEye/>
-
+                ?
+                <FaEyeSlash />
+                :
+                <FaEye />
             }
 
           </button>
 
         </div>
 
+        {/* CONFIRMAR */}
+
         <div className="relative">
 
-          <FaLock className="absolute left-4 top-5 text-gray-400"/>
+          <FaLock
+            className="
+              absolute
+              left-4
+              top-5
+              text-gray-400
+            "
+          />
 
           <input
 
-            type={showConfirm?"text":"password"}
+            type={
+              showConfirm
+                ? "text"
+                : "password"
+            }
 
             name="confirmPassword"
 
             placeholder="Confirmar contraseña"
 
-            value={form.confirmPassword}
+            value={
+              form.confirmPassword
+            }
 
-            onChange={handleChange}
+            onChange={
+              handleChange
+            }
 
             required
 
-            className="w-full border rounded-xl py-4 pl-12 pr-12"
+            className="
+              w-full
+              border
+              rounded-xl
+              py-4
+              pl-12
+              pr-12
+              focus:outline-none
+              focus:ring-2
+              focus:ring-blue-500
+            "
 
           />
 
@@ -319,24 +905,27 @@ export default function RegisterAdmin({
 
             type="button"
 
-            className="absolute right-4 top-5"
+            className="
+              absolute
+              right-4
+              top-5
+              text-gray-500
+            "
 
-            onClick={()=>setShowConfirm(!showConfirm)}
+            onClick={() =>
+              setShowConfirm(
+                !showConfirm
+              )
+            }
 
           >
 
             {
-
               showConfirm
-
-              ?
-
-              <FaEyeSlash/>
-
-              :
-
-              <FaEye/>
-
+                ?
+                <FaEyeSlash />
+                :
+                <FaEye />
             }
 
           </button>
@@ -345,35 +934,81 @@ export default function RegisterAdmin({
 
       </div>
 
-      <div className="bg-blue-50 rounded-xl p-5 mt-8">
+      {/* ================================================
+          INFORMACIÓN DEL ROL
+      ================================================ */}
 
-        <h3 className="font-bold text-blue-700">
+      <div
+        className="
+          bg-blue-50
+          rounded-xl
+          p-5
+          mt-8
+        "
+      >
 
+        <h3
+          className="
+            font-bold
+            text-blue-700
+          "
+        >
           Rol asignado automáticamente
-
         </h3>
 
-        <p className="text-blue-600 mt-2">
-
+        <p
+          className="
+            text-blue-600
+            mt-2
+          "
+        >
           Administrador
+        </p>
 
+        <p
+          className="
+            text-sm
+            text-blue-500
+            mt-2
+          "
+        >
+          Este rol solo puede asignarse durante
+          la configuración inicial del sistema.
         </p>
 
       </div>
 
-      <div className="flex justify-between mt-8">
+      {/* ================================================
+          BOTONES
+      ================================================ */}
+
+      <div
+        className="
+          flex
+          justify-between
+          mt-8
+        "
+      >
 
         <button
 
           type="button"
 
-          onClick={goLogin}
+          onClick={
+            goLogin
+          }
 
-          className="flex items-center gap-2 text-blue-700"
+          className="
+            flex
+            items-center
+            gap-2
+            text-blue-700
+            hover:text-blue-900
+          "
 
         >
 
-          <FaArrowLeft/>
+          <FaArrowLeft />
 
           Volver
 
@@ -381,22 +1016,31 @@ export default function RegisterAdmin({
 
         <button
 
-          className="bg-blue-700 text-white px-8 py-4 rounded-xl hover:bg-blue-800"
+          type="submit"
+
+          disabled={
+            loading
+          }
+
+          className="
+            bg-blue-700
+            text-white
+            px-8
+            py-4
+            rounded-xl
+            hover:bg-blue-800
+            disabled:opacity-50
+            disabled:cursor-not-allowed
+          "
 
         >
 
           {
-
             loading
-
-            ?
-
-            "Registrando..."
-
-            :
-
-            "Crear Administrador"
-
+              ?
+              "Registrando..."
+              :
+              "Crear Administrador"
           }
 
         </button>

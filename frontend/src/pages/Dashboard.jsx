@@ -2,44 +2,48 @@ import {
   useEffect,
   useState,
   useContext
-} from "react"
+} from "react";
 
 import {
-  Link,
   useNavigate
-} from "react-router-dom"
+} from "react-router-dom";
 
-import axios from "axios"
+import axios from "axios";
 
 import {
   FaProjectDiagram,
   FaTasks,
   FaChartBar
-} from "react-icons/fa"
+} from "react-icons/fa";
 
 import {
-
   BarChart,
   Bar,
   XAxis,
   YAxis,
   Tooltip,
   ResponsiveContainer
-
-} from "recharts"
+} from "recharts";
 
 import {
   ThemeContext
-} from "../context/ThemeContext"
+} from "../context/ThemeContext";
+
+import Sidebar from "../components/Sidebar";
 
 function Dashboard() {
 
-  const navigate = useNavigate()
-  const { darkMode, setDarkMode } = useContext(ThemeContext)
+  const navigate = useNavigate();
+
+  const {
+    darkMode,
+    setDarkMode
+  } = useContext(ThemeContext);
 
   const user = JSON.parse(
-    localStorage.getItem("user")
-  )
+    localStorage.getItem("user") || "null"
+  );
+
   const [stats, setStats] = useState({
 
     proyectos: 0,
@@ -54,7 +58,7 @@ function Dashboard() {
 
     proyectosRetrasados: 0
 
-  })
+  });
 
   // =========================
   // LOGOUT
@@ -62,13 +66,13 @@ function Dashboard() {
 
   const logout = () => {
 
-    localStorage.removeItem("token")
+    localStorage.removeItem("token");
 
-    localStorage.removeItem("user")
+    localStorage.removeItem("user");
 
-    navigate("/")
+    navigate("/");
 
-  }
+  };
 
   // =========================
   // OBTENER ESTADÍSTICAS
@@ -78,25 +82,48 @@ function Dashboard() {
 
     try {
 
-      const response = await axios.get(
-        "https://ingete-backend.onrender.com/dashboard"
-      )
+      const token = localStorage.getItem("token");
 
-      setStats(response.data)
+      const response = await axios.get(
+        "http://127.0.0.1:3000/dashboard",
+        {
+          headers: {
+            Authorization: `Bearer ${token}`
+          }
+        }
+      );
+
+      setStats(response.data);
 
     } catch (error) {
 
-      console.log(error)
+      console.log(
+        "Error obteniendo estadísticas:",
+        error
+      );
+
+      if (
+        error.response?.status === 401 ||
+        error.response?.status === 403
+      ) {
+
+        localStorage.removeItem("token");
+
+        localStorage.removeItem("user");
+
+        navigate("/");
+
+      }
 
     }
 
-  }
+  };
 
   useEffect(() => {
 
-    getStats()
+    getStats();
 
-  }, [])
+  }, []);
 
   // =========================
   // DATOS DEL GRÁFICO
@@ -124,74 +151,37 @@ function Dashboard() {
       total: stats.retrasadas
     }
 
-  ]
+  ];
 
   return (
 
-    <div className="flex flex-col md:flex-row">
+    <div className="flex min-h-screen">
 
-      {/* SIDEBAR */}
+      {/* =========================
+          SIDEBAR
+      ========================= */}
 
-      <div className="w-full md:w-64 min-h-screen bg-blue-900 text-white p-5">
+      <Sidebar />
 
-        <h1 className="text-3xl font-bold mb-10 text-center md:text-left">
-          Ingetec
-        </h1>
-
-        <ul className="space-y-4">
-
-          <Link to="/dashboard">
-
-            <li className="bg-blue-700 p-3 rounded-lg cursor-pointer text-center md:text-left">
-              Dashboard
-            </li>
-
-          </Link>
-
-          <Link to="/projects">
-
-            <li className="hover:bg-blue-700 p-3 rounded-lg cursor-pointer text-center md:text-left">
-              Proyectos
-            </li>
-
-          </Link>
-
-          <Link to="/tasks">
-
-            <li className="hover:bg-blue-700 p-3 rounded-lg cursor-pointer text-center md:text-left">
-              Tareas
-            </li>
-
-          </Link>
-
-          <Link to="/reports">
-
-            <li className="hover:bg-blue-700 p-3 rounded-lg cursor-pointer text-center md:text-left">
-              Reportes
-            </li>
-
-          </Link>
-
-        </ul>
-
-      </div>
-
-      {/* CONTENIDO */}
+      {/* =========================
+          CONTENIDO PRINCIPAL
+      ========================= */}
 
       <div
         className={`
-
-          flex-1 p-5 md:p-10 transition-all duration-300
-
-          ${darkMode
-            ? "bg-gray-900 text-white"
-            : "bg-gray-100 text-black"
+          flex-1 p-5 md:p-10
+          transition-all duration-300
+          ${
+            darkMode
+              ? "bg-gray-900 text-white"
+              : "bg-gray-100 text-black"
           }
-
         `}
       >
 
-        {/* TOPBAR */}
+        {/* =========================
+            TOPBAR
+        ========================= */}
 
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
 
@@ -213,26 +203,32 @@ function Dashboard() {
             onClick={logout}
             className="bg-red-600 text-white px-5 py-2 rounded-xl hover:bg-red-700"
           >
+
             Cerrar Sesión
+
           </button>
 
         </div>
 
-        {/* TÍTULO */}
+        {/* =========================
+            TÍTULO
+        ========================= */}
 
         <h2
           className={`
-
-            text-3xl md:text-4xl font-bold text-center md:text-left
-
-            ${darkMode
-              ? "text-white"
-              : "text-gray-800"
+            text-3xl md:text-4xl
+            font-bold
+            text-center md:text-left
+            ${
+              darkMode
+                ? "text-white"
+                : "text-gray-800"
             }
-
           `}
         >
+
           Panel Administrativo
+
         </h2>
 
         <p className="text-gray-500 mt-2">
@@ -247,14 +243,18 @@ function Dashboard() {
 
         </p>
 
-        {/* ALERTA PENDIENTES */}
+        {/* =========================
+            ALERTA PENDIENTES
+        ========================= */}
 
         {stats.pendientes > 0 && (
 
           <div className="bg-yellow-100 border-l-8 border-yellow-500 text-yellow-700 p-5 rounded-xl mt-6 mb-8">
 
             <h3 className="text-2xl font-bold">
+
               ⚠ Tareas Pendientes
+
             </h3>
 
             <p className="mt-2 text-lg">
@@ -268,7 +268,9 @@ function Dashboard() {
 
         )}
 
-        {/* ALERTA RETRASADAS */}
+        {/* =========================
+            ALERTA RETRASADAS
+        ========================= */}
 
         {(
           stats.retrasadas > 0 ||
@@ -279,14 +281,12 @@ function Dashboard() {
 
             <h3 className="text-2xl font-bold">
 
-              ⚠ {
+              ⚠{" "}
 
+              {
                 stats.proyectosRetrasados > 0
-
                   ? "Proyectos Retrasados"
-
                   : "Tareas Retrasadas"
-
               }
 
             </h3>
@@ -297,11 +297,11 @@ function Dashboard() {
 
                 <p>
 
-                  Existen {
+                  Existen{" "}
 
-                    stats.proyectosRetrasados
+                  {stats.proyectosRetrasados}
 
-                  } proyectos retrasados.
+                  {" "}proyectos retrasados.
 
                 </p>
 
@@ -309,11 +309,11 @@ function Dashboard() {
 
                 <p>
 
-                  Existen {
+                  Existen{" "}
 
-                    stats.retrasadas
+                  {stats.retrasadas}
 
-                  } tareas retrasadas.
+                  {" "}tareas retrasadas.
 
                 </p>
 
@@ -325,7 +325,9 @@ function Dashboard() {
 
         )}
 
-        {/* TARJETAS */}
+        {/* =========================
+            TARJETAS
+        ========================= */}
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-10">
 
@@ -333,14 +335,14 @@ function Dashboard() {
 
           <div
             className={`
-
-              p-6 rounded-2xl shadow-xl hover:scale-105 transition duration-300
-
-              ${darkMode
-                ? "bg-gray-800"
-                : "bg-white"
+              p-6 rounded-2xl shadow-xl
+              hover:scale-105
+              transition duration-300
+              ${
+                darkMode
+                  ? "bg-gray-800"
+                  : "bg-white"
               }
-
             `}
           >
 
@@ -349,11 +351,15 @@ function Dashboard() {
               <div>
 
                 <h3 className="text-xl font-bold">
+
                   Proyectos
+
                 </h3>
 
                 <p className="text-4xl mt-4 text-blue-700 font-bold">
+
                   {stats.proyectos}
+
                 </p>
 
               </div>
@@ -368,14 +374,14 @@ function Dashboard() {
 
           <div
             className={`
-
-              p-6 rounded-2xl shadow-xl hover:scale-105 transition duration-300
-
-              ${darkMode
-                ? "bg-gray-800"
-                : "bg-white"
+              p-6 rounded-2xl shadow-xl
+              hover:scale-105
+              transition duration-300
+              ${
+                darkMode
+                  ? "bg-gray-800"
+                  : "bg-white"
               }
-
             `}
           >
 
@@ -384,11 +390,15 @@ function Dashboard() {
               <div>
 
                 <h3 className="text-xl font-bold">
+
                   Tareas
+
                 </h3>
 
                 <p className="text-4xl mt-4 text-green-600 font-bold">
+
                   {stats.tareas}
+
                 </p>
 
               </div>
@@ -403,14 +413,14 @@ function Dashboard() {
 
           <div
             className={`
-
-              p-6 rounded-2xl shadow-xl hover:scale-105 transition duration-300
-
-              ${darkMode
-                ? "bg-gray-800"
-                : "bg-white"
+              p-6 rounded-2xl shadow-xl
+              hover:scale-105
+              transition duration-300
+              ${
+                darkMode
+                  ? "bg-gray-800"
+                  : "bg-white"
               }
-
             `}
           >
 
@@ -419,11 +429,15 @@ function Dashboard() {
               <div>
 
                 <h3 className="text-xl font-bold">
+
                   Reportes
+
                 </h3>
 
                 <p className="text-4xl mt-4 text-purple-600 font-bold">
+
                   {stats.reportes}
+
                 </p>
 
               </div>
@@ -436,11 +450,31 @@ function Dashboard() {
 
         </div>
 
-        {/* GRÁFICO */}
+        {/* =========================
+            GRÁFICO
+        ========================= */}
 
-        <div className="bg-white p-8 rounded-2xl shadow-xl mt-10">
+        <div
+          className={`
+            p-8 rounded-2xl shadow-xl mt-10
+            ${
+              darkMode
+                ? "bg-gray-800"
+                : "bg-white"
+            }
+          `}
+        >
 
-          <h2 className="text-3xl font-bold mb-6 text-black">
+          <h2
+            className={`
+              text-3xl font-bold mb-6
+              ${
+                darkMode
+                  ? "text-white"
+                  : "text-black"
+              }
+            `}
+          >
 
             Estadísticas del Sistema
 
@@ -453,9 +487,22 @@ function Dashboard() {
 
             <BarChart data={chartData}>
 
-              <XAxis dataKey="nombre" />
+              <XAxis
+                dataKey="nombre"
+                stroke={
+                  darkMode
+                    ? "#ffffff"
+                    : "#000000"
+                }
+              />
 
-              <YAxis />
+              <YAxis
+                stroke={
+                  darkMode
+                    ? "#ffffff"
+                    : "#000000"
+                }
+              />
 
               <Tooltip />
 
@@ -474,8 +521,8 @@ function Dashboard() {
 
     </div>
 
-  )
+  );
 
 }
 
-export default Dashboard
+export default Dashboard;

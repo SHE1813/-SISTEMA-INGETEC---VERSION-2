@@ -1,45 +1,61 @@
 import {
   useEffect,
-  useState,
-  useRef,
-  useContext
-} from "react"
+  useState
+} from "react";
 
-import axios from "axios"
+import axios from "axios";
 
 import {
+  FaChartBar,
+  FaPrint,
+  FaSearch
+} from "react-icons/fa";
 
+import {
   BarChart,
   Bar,
   XAxis,
   YAxis,
   Tooltip,
   ResponsiveContainer
+} from "recharts";
 
-} from "recharts"
+import Sidebar from "../components/Sidebar";
+import Navbar from "../components/Navbar";
 
-import {
-  Link
-} from "react-router-dom"
 
-import {
-  ThemeContext
-} from "../context/ThemeContext"
+const API = "http://127.0.0.1:3000";
+
 
 function Reports() {
 
-  const theme = useContext(ThemeContext)
-
-  const darkMode =
-    theme?.darkMode || false
-
-  const reportRef = useRef()
+  // =========================
+  // ESTADOS
+  // =========================
 
   const [projects, setProjects] =
-    useState([])
+    useState([]);
 
   const [tasks, setTasks] =
-    useState([])
+    useState([]);
+
+  const [searchProject, setSearchProject] =
+    useState("");
+
+  const [searchTask, setSearchTask] =
+    useState("");
+
+
+  // =========================
+  // TOKEN
+  // =========================
+
+  const getToken = () => {
+
+    return localStorage.getItem("token");
+
+  };
+
 
   // =========================
   // OBTENER DATOS
@@ -49,43 +65,111 @@ function Reports() {
 
     try {
 
+      const token = getToken();
+
+
+      // =========================
+      // PROYECTOS
+      // =========================
+
       const projectsResponse =
         await axios.get(
-          "https://ingete-backend.onrender.com/register"
-        )
+
+          `${API}/projects`,
+
+          {
+            headers: {
+              Authorization:
+                `Bearer ${token}`
+            }
+          }
+
+        );
+
+
+      // =========================
+      // TAREAS
+      // =========================
 
       const tasksResponse =
         await axios.get(
-          "https://ingete-backend.onrender.com/register"
-        )
 
-      setProjects(projectsResponse.data)
+          `${API}/tasks`,
 
-      setTasks(tasksResponse.data)
+          {
+            headers: {
+              Authorization:
+                `Bearer ${token}`
+            }
+          }
+
+        );
+
+
+      setProjects(
+        projectsResponse.data || []
+      );
+
+
+      setTasks(
+        tasksResponse.data || []
+      );
+
 
     } catch (error) {
 
-      console.log(error)
+      console.error(
+        "Error obteniendo datos del reporte:",
+        error
+      );
+
+
+      if (
+        error.response?.status === 401
+      ) {
+
+        localStorage.removeItem("token");
+
+        localStorage.removeItem("user");
+
+        window.location.href = "/";
+
+      }
+
+
+      if (
+        error.response?.status === 403
+      ) {
+
+        alert(
+          error.response?.data?.message ||
+          "No tienes permisos para acceder a los reportes."
+        );
+
+      }
 
     }
 
-  }
+  };
+
 
   useEffect(() => {
 
-    getData()
+    getData();
 
-  }, [])
+  }, []);
+
 
   // =========================
-  // IMPRIMIR PDF
+  // IMPRIMIR REPORTE
   // =========================
 
   const generatePDF = () => {
 
-    window.print()
+    window.print();
 
-  }
+  };
+
 
   // =========================
   // DATOS DEL GRÁFICO
@@ -103,321 +187,635 @@ function Reports() {
       total: tasks.length
     }
 
-  ]
+  ];
+
+
+  // =========================
+  // FILTRAR PROYECTOS
+  // =========================
+
+  const filteredProjects =
+    projects.filter((project) => {
+
+      const texto =
+        searchProject.toLowerCase();
+
+      return (
+
+        (project.nombre || "")
+          .toLowerCase()
+          .includes(texto)
+
+        ||
+
+        (project.responsable || "")
+          .toLowerCase()
+          .includes(texto)
+
+        ||
+
+        (project.estado || "")
+          .toLowerCase()
+          .includes(texto)
+
+      );
+
+    });
+
+
+  // =========================
+  // FILTRAR TAREAS
+  // =========================
+
+  const filteredTasks =
+    tasks.filter((task) => {
+
+      const texto =
+        searchTask.toLowerCase();
+
+      return (
+
+        (task.titulo || "")
+          .toLowerCase()
+          .includes(texto)
+
+        ||
+
+        (task.responsable || "")
+          .toLowerCase()
+          .includes(texto)
+
+        ||
+
+        (task.estado || "")
+          .toLowerCase()
+          .includes(texto)
+
+      );
+
+    });
+
+
+  // =========================
+  // RENDER
+  // =========================
 
   return (
 
-    <div className="flex flex-col md:flex-row">
+    <div className="flex min-h-screen">
 
-      {/* SIDEBAR */}
+      {/* =========================
+          SIDEBAR
+      ========================= */}
 
-      <div className="w-full md:w-64 min-h-screen bg-blue-900 text-white p-5 print:hidden">
+      <div className="print:hidden">
 
-        <h1 className="text-3xl font-bold mb-10">
-          Ingetec
-        </h1>
-
-        <ul className="space-y-4">
-
-          <Link to="/dashboard">
-
-            <li className="hover:bg-blue-700 p-3 rounded-lg">
-              Dashboard
-            </li>
-
-          </Link>
-
-          <Link to="/projects">
-
-            <li className="hover:bg-blue-700 p-3 rounded-lg">
-              Proyectos
-            </li>
-
-          </Link>
-
-          <Link to="/tasks">
-
-            <li className="hover:bg-blue-700 p-3 rounded-lg">
-              Tareas
-            </li>
-
-          </Link>
-
-          <Link to="/reports">
-
-            <li className="bg-blue-700 p-3 rounded-lg">
-              Reportes
-            </li>
-
-          </Link>
-
-        </ul>
+        <Sidebar />
 
       </div>
 
-      {/* CONTENIDO */}
 
-      <div className={`
+      {/* =========================
+          CONTENIDO
+      ========================= */}
 
-        flex-1 p-10
+      <div className="flex-1 bg-slate-100 min-h-screen">
 
-        ${darkMode
-          ? "bg-gray-900 text-white"
-          : "bg-gray-100 text-black"
-        }
+        {/* NAVBAR */}
 
-      `}>
+        <div className="print:hidden">
 
-        {/* CABECERA */}
-
-        <div className="flex justify-between items-center mb-10 print:hidden">
-
-          <h2 className="text-4xl font-bold">
-            Reportes del Sistema
-          </h2>
-
-          <button
-            onClick={generatePDF}
-            className="bg-red-600 text-white px-6 py-3 rounded-xl hover:bg-red-700"
-          >
-            Imprimir PDF
-          </button>
+          <Navbar />
 
         </div>
 
-        {/* REPORTE */}
 
-        <div
-          ref={reportRef}
-          className={`
+        <div className="p-8">
 
-            p-10 rounded-3xl shadow-xl
 
-            ${darkMode
-              ? "bg-gray-800 text-white"
-              : "bg-white text-black"
-            }
+          {/* =========================
+              ENCABEZADO
+          ========================= */}
 
-          `}
-        >
+          <div className="bg-white rounded-2xl shadow-xl p-8">
 
-          <h1 className="text-4xl font-bold text-center mb-4">
-            INGETEC
-          </h1>
 
-          <p className="text-center mb-10 text-lg">
+            <div className="flex justify-between items-center mb-8">
 
-            Reporte General del Sistema Web
+              <div>
 
-          </p>
+                <h1 className="text-4xl font-bold">
 
-          <p className="mb-10">
+                  Reportes del Sistema
 
-            Fecha:
-            {" "}
-            {new Date().toLocaleDateString()}
+                </h1>
 
-          </p>
+                <p className="text-gray-500 mt-2">
 
-          {/* TARJETAS */}
+                  Consulta y supervisa la información general de Ingetec.
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+                </p>
 
-            <div className="bg-blue-100 p-6 rounded-2xl">
+              </div>
 
-              <h3 className="text-2xl font-bold text-blue-800">
-                Total Proyectos
-              </h3>
 
-              <p className="text-5xl mt-4 font-bold text-black">
-                {projects.length}
-              </p>
+              <button
+
+                onClick={generatePDF}
+
+                className="flex items-center gap-3 bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl shadow-lg print:hidden"
+
+              >
+
+                <FaPrint />
+
+                Imprimir PDF
+
+              </button>
 
             </div>
 
-            <div className="bg-green-100 p-6 rounded-2xl">
 
-              <h3 className="text-2xl font-bold text-green-800">
-                Total Tareas
-              </h3>
+            {/* =========================
+                TARJETAS
+            ========================= */}
 
-              <p className="text-5xl mt-4 font-bold text-black">
-                {tasks.length}
-              </p>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
+
+
+              {/* PROYECTOS */}
+
+              <div className="bg-blue-50 border border-blue-200 p-6 rounded-2xl">
+
+                <div className="flex items-center justify-between">
+
+                  <div>
+
+                    <h3 className="text-xl font-bold text-blue-800">
+
+                      Total de Proyectos
+
+                    </h3>
+
+
+                    <p className="text-5xl mt-4 font-bold text-blue-700">
+
+                      {projects.length}
+
+                    </p>
+
+                  </div>
+
+
+                  <FaChartBar className="text-5xl text-blue-600" />
+
+                </div>
+
+              </div>
+
+
+              {/* TAREAS */}
+
+              <div className="bg-green-50 border border-green-200 p-6 rounded-2xl">
+
+                <div className="flex items-center justify-between">
+
+                  <div>
+
+                    <h3 className="text-xl font-bold text-green-800">
+
+                      Total de Tareas
+
+                    </h3>
+
+
+                    <p className="text-5xl mt-4 font-bold text-green-600">
+
+                      {tasks.length}
+
+                    </p>
+
+                  </div>
+
+
+                  <FaChartBar className="text-5xl text-green-600" />
+
+                </div>
+
+              </div>
 
             </div>
 
-          </div>
 
-          {/* GRÁFICO */}
+            {/* =========================
+                GRÁFICO
+            ========================= */}
 
-          <div className="bg-white p-8 rounded-2xl shadow-xl mt-10 mb-10">
+            <div className="bg-slate-50 border rounded-2xl p-8 mb-10">
 
-            <h2 className="text-3xl font-bold mb-6 text-black">
+              <h2 className="text-2xl font-bold mb-6">
 
-              Estadísticas del Sistema
+                Estadísticas del Sistema
 
-            </h2>
+              </h2>
 
-            <ResponsiveContainer
-              width="100%"
-              height={400}
-            >
 
-              <BarChart data={chartData}>
+              <ResponsiveContainer
 
-                <XAxis dataKey="nombre" />
+                width="100%"
 
-                <YAxis />
+                height={350}
 
-                <Tooltip />
+              >
 
-                <Bar
-                  dataKey="total"
-                  fill="#1D4ED8"
+                <BarChart data={chartData}>
+
+                  <XAxis
+                    dataKey="nombre"
+                  />
+
+                  <YAxis />
+
+                  <Tooltip />
+
+                  <Bar
+                    dataKey="total"
+                    fill="#2563EB"
+                  />
+
+                </BarChart>
+
+              </ResponsiveContainer>
+
+            </div>
+
+
+            {/* =========================
+                PROYECTOS
+            ========================= */}
+
+            <div className="mb-10">
+
+
+              <div className="flex justify-between items-center mb-5">
+
+                <div>
+
+                  <h2 className="text-2xl font-bold">
+
+                    Lista de Proyectos
+
+                  </h2>
+
+                  <p className="text-gray-500">
+
+                    Proyectos registrados en el sistema.
+
+                  </p>
+
+                </div>
+
+              </div>
+
+
+              {/* BUSCADOR */}
+
+              <div className="relative mb-5 print:hidden">
+
+                <FaSearch
+
+                  className="absolute left-4 top-4 text-gray-400"
+
                 />
 
-              </BarChart>
 
-            </ResponsiveContainer>
+                <input
 
-          </div>
+                  type="text"
 
-          {/* TABLA PROYECTOS */}
+                  placeholder="Buscar proyecto..."
 
-          <h3 className="text-3xl font-bold mb-5">
-            Lista de Proyectos
-          </h3>
+                  value={searchProject}
 
-          <div className="overflow-x-auto">
+                  onChange={(e) =>
+                    setSearchProject(e.target.value)
+                  }
 
-            <table className="w-full border mb-10">
+                  className="w-full border rounded-xl pl-12 p-3 outline-none focus:ring-2 focus:ring-blue-500"
 
-              <thead className="bg-blue-700 text-white">
+                />
 
-                <tr>
+              </div>
 
-                  <th className="p-3">
-                    Nombre
-                  </th>
 
-                  <th className="p-3">
-                    Responsable
-                  </th>
+              <div className="overflow-x-auto">
 
-                  <th className="p-3">
-                    Estado
-                  </th>
+                <table className="w-full">
 
-                  <th className="p-3">
-                    Fecha
-                  </th>
+                  <thead>
 
-                </tr>
+                    <tr className="border-b bg-blue-700 text-white">
 
-              </thead>
+                      <th className="p-4 text-left">
 
-              <tbody>
+                        ID
 
-                {projects.map((project) => (
+                      </th>
 
-                  <tr
-                    key={project.id}
-                    className="border-b text-center"
-                  >
+                      <th className="p-4 text-left">
 
-                    <td className="p-3">
-                      {project.nombre}
-                    </td>
+                        Proyecto
 
-                    <td className="p-3">
-                      {project.responsable}
-                    </td>
+                      </th>
 
-                    <td className="p-3">
-                      {project.estado}
-                    </td>
+                      <th className="p-4">
 
-                    <td className="p-3">
-                      {project.fecha}
-                    </td>
+                        Responsable
 
-                  </tr>
+                      </th>
 
-                ))}
+                      <th className="p-4">
 
-              </tbody>
+                        Estado
 
-            </table>
+                      </th>
 
-          </div>
+                      <th className="p-4">
 
-          {/* TABLA TAREAS */}
+                        Fecha
 
-          <h3 className="text-3xl font-bold mb-5">
-            Lista de Tareas
-          </h3>
+                      </th>
 
-          <div className="overflow-x-auto">
+                    </tr>
 
-            <table className="w-full border">
+                  </thead>
 
-              <thead className="bg-green-700 text-white">
 
-                <tr>
+                  <tbody>
 
-                  <th className="p-3">
-                    Título
-                  </th>
+                    {filteredProjects.length === 0 ? (
 
-                  <th className="p-3">
-                    Responsable
-                  </th>
+                      <tr>
 
-                  <th className="p-3">
-                    Estado
-                  </th>
+                        <td
 
-                  <th className="p-3">
-                    Fecha
-                  </th>
+                          colSpan="5"
 
-                </tr>
+                          className="text-center py-8 text-gray-500"
 
-              </thead>
+                        >
 
-              <tbody>
+                          No se encontraron proyectos.
 
-                {tasks.map((task) => (
+                        </td>
 
-                  <tr
-                    key={task.id}
-                    className="border-b text-center"
-                  >
+                      </tr>
 
-                    <td className="p-3">
-                      {task.titulo}
-                    </td>
+                    ) : (
 
-                    <td className="p-3">
-                      {task.responsable}
-                    </td>
+                      filteredProjects.map(
+                        (project) => (
 
-                    <td className="p-3">
-                      {task.estado}
-                    </td>
+                          <tr
 
-                    <td className="p-3">
-                      {task.fecha}
-                    </td>
+                            key={project.id}
 
-                  </tr>
+                            className="border-b hover:bg-slate-50"
 
-                ))}
+                          >
 
-              </tbody>
+                            <td className="p-4">
 
-            </table>
+                              {project.id}
+
+                            </td>
+
+
+                            <td className="p-4 font-semibold">
+
+                              {project.nombre}
+
+                            </td>
+
+
+                            <td className="p-4 text-center">
+
+                              {project.responsable}
+
+                            </td>
+
+
+                            <td className="p-4 text-center">
+
+                              {project.estado}
+
+                            </td>
+
+
+                            <td className="p-4 text-center">
+
+                              {project.fecha
+                                ? project.fecha.split("T")[0]
+                                : "-"}
+
+                            </td>
+
+                          </tr>
+
+                        )
+                      )
+
+                    )}
+
+                  </tbody>
+
+                </table>
+
+              </div>
+
+            </div>
+
+
+            {/* =========================
+                TAREAS
+            ========================= */}
+
+            <div>
+
+
+              <div className="mb-5">
+
+                <h2 className="text-2xl font-bold">
+
+                  Lista de Tareas
+
+                </h2>
+
+                <p className="text-gray-500">
+
+                  Tareas registradas en el sistema.
+
+                </p>
+
+              </div>
+
+
+              {/* BUSCADOR */}
+
+              <div className="relative mb-5 print:hidden">
+
+                <FaSearch
+
+                  className="absolute left-4 top-4 text-gray-400"
+
+                />
+
+
+                <input
+
+                  type="text"
+
+                  placeholder="Buscar tarea..."
+
+                  value={searchTask}
+
+                  onChange={(e) =>
+                    setSearchTask(e.target.value)
+                  }
+
+                  className="w-full border rounded-xl pl-12 p-3 outline-none focus:ring-2 focus:ring-green-500"
+
+                />
+
+              </div>
+
+
+              <div className="overflow-x-auto">
+
+                <table className="w-full">
+
+                  <thead>
+
+                    <tr className="border-b bg-green-700 text-white">
+
+                      <th className="p-4 text-left">
+
+                        ID
+
+                      </th>
+
+                      <th className="p-4 text-left">
+
+                        Tarea
+
+                      </th>
+
+                      <th className="p-4">
+
+                        Responsable
+
+                      </th>
+
+                      <th className="p-4">
+
+                        Estado
+
+                      </th>
+
+                      <th className="p-4">
+
+                        Fecha
+
+                      </th>
+
+                    </tr>
+
+                  </thead>
+
+
+                  <tbody>
+
+                    {filteredTasks.length === 0 ? (
+
+                      <tr>
+
+                        <td
+
+                          colSpan="5"
+
+                          className="text-center py-8 text-gray-500"
+
+                        >
+
+                          No se encontraron tareas.
+
+                        </td>
+
+                      </tr>
+
+                    ) : (
+
+                      filteredTasks.map(
+                        (task) => (
+
+                          <tr
+
+                            key={task.id}
+
+                            className="border-b hover:bg-slate-50"
+
+                          >
+
+                            <td className="p-4">
+
+                              {task.id}
+
+                            </td>
+
+
+                            <td className="p-4 font-semibold">
+
+                              {task.titulo}
+
+                            </td>
+
+
+                            <td className="p-4 text-center">
+
+                              {task.responsable}
+
+                            </td>
+
+
+                            <td className="p-4 text-center">
+
+                              {task.estado}
+
+                            </td>
+
+
+                            <td className="p-4 text-center">
+
+                              {task.fecha
+                                ? task.fecha.split("T")[0]
+                                : "-"}
+
+                            </td>
+
+                          </tr>
+
+                        )
+                      )
+
+                    )}
+
+                  </tbody>
+
+                </table>
+
+              </div>
+
+            </div>
 
           </div>
 
@@ -427,8 +825,8 @@ function Reports() {
 
     </div>
 
-  )
+  );
 
 }
 
-export default Reports
+export default Reports;

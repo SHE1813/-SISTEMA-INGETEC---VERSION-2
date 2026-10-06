@@ -1,505 +1,1084 @@
-import {
-  useContext,
-  useEffect,
-  useState
-} from "react"
-
-import axios from "axios"
+import { useEffect, useState } from "react";
+import axios from "axios";
 
 import {
-  Link
-} from "react-router-dom"
+  FaSearch,
+  FaPlus,
+  FaEdit,
+  FaTrash,
+  FaTimes,
+} from "react-icons/fa";
 
-import {
-  ThemeContext
-} from "../context/ThemeContext"
+import Sidebar from "../components/Sidebar";
+import Navbar from "../components/Navbar";
 
-function Tasks() {
+const API = "http://127.0.0.1:3000";
 
-  const theme = useContext(ThemeContext)
+export default function Tasks() {
 
-  const darkMode =
-    theme?.darkMode || false
+  // =====================================================
+  // ESTADOS
+  // =====================================================
 
-  // =========================
-  // STATES
-  // =========================
+  const [tasks, setTasks] = useState([]);
 
-  const [titulo, setTitulo] =
-    useState("")
+  const [projects, setProjects] = useState([]);
 
-  const [responsable, setResponsable] =
-    useState("")
+  const [search, setSearch] = useState("");
 
-  const [estado, setEstado] =
-    useState("")
-
-  const [fecha, setFecha] =
-    useState("")
-
-  const [tasks, setTasks] =
-    useState([])
-
-  const [search, setSearch] =
-    useState("")
+  const [mostrarFormulario, setMostrarFormulario] =
+    useState(false);
 
   const [editingId, setEditingId] =
-    useState(null)
+    useState(null);
 
-  // =========================
+  const [form, setForm] = useState({
+    titulo: "",
+    responsable: "",
+    project_id: "",
+    estado: "",
+    fecha: "",
+  });
+
+  // =====================================================
+  // TOKEN
+  // =====================================================
+
+  const getToken = () => {
+    return localStorage.getItem("token");
+  };
+
+  // =====================================================
   // OBTENER TAREAS
-  // =========================
+  // =====================================================
 
   const getTasks = async () => {
 
     try {
 
-      const response = await axios.get(
-        "https://ingete-backend.onrender.com/tasks"
-      )
+      const token = getToken();
 
-      setTasks(response.data)
+      const response = await axios.get(
+        `${API}/tasks`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setTasks(
+        response.data || []
+      );
 
     } catch (error) {
 
-      console.log(error)
+      console.error(
+        "Error obteniendo tareas:",
+        error
+      );
+
+      if (
+        error.response?.status === 401 ||
+        error.response?.status === 403
+      ) {
+
+        alert(
+          error.response?.data?.message ||
+          "No tienes permisos para acceder a las tareas."
+        );
+
+      }
 
     }
 
-  }
+  };
+
+  // =====================================================
+  // OBTENER PROYECTOS
+  // =====================================================
+
+  const getProjects = async () => {
+
+    try {
+
+      const token = getToken();
+
+      const response = await axios.get(
+        `${API}/tasks/projects`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setProjects(
+        response.data || []
+      );
+
+    } catch (error) {
+
+      console.error(
+        "Error obteniendo proyectos:",
+        error
+      );
+
+    }
+
+  };
+
+  // =====================================================
+  // CARGAR DATOS
+  // =====================================================
 
   useEffect(() => {
 
-    getTasks()
+    getTasks();
+    getProjects();
 
-  }, [])
+  }, []);
 
-  // =========================
+  // =====================================================
+  // CAMBIAR FORMULARIO
+  // =====================================================
+
+  const handleChange = (e) => {
+
+    setForm({
+      ...form,
+      [e.target.name]: e.target.value,
+    });
+
+  };
+
+  // =====================================================
+  // NUEVA TAREA
+  // =====================================================
+
+  const nuevaTarea = () => {
+
+    setEditingId(null);
+
+    setForm({
+      titulo: "",
+      responsable: "",
+      project_id: "",
+      estado: "",
+      fecha: "",
+    });
+
+    setMostrarFormulario(true);
+
+  };
+
+  // =====================================================
   // GUARDAR TAREA
-  // =========================
+  // =====================================================
 
-  const saveTask = async () => {
+  const saveTask = async (e) => {
+
+    e.preventDefault();
+
+    if (!form.titulo.trim()) {
+
+      alert(
+        "Ingrese el título de la tarea."
+      );
+
+      return;
+
+    }
+
+    if (!form.responsable.trim()) {
+
+      alert(
+        "Ingrese el responsable de la tarea."
+      );
+
+      return;
+
+    }
+
+    if (!form.project_id) {
+
+      alert(
+        "Seleccione el proyecto."
+      );
+
+      return;
+
+    }
+
+    if (!form.estado) {
+
+      alert(
+        "Seleccione el estado de la tarea."
+      );
+
+      return;
+
+    }
+
+    if (!form.fecha) {
+
+      alert(
+        "Seleccione la fecha de la tarea."
+      );
+
+      return;
+
+    }
 
     try {
 
-      await axios.post(
+      const token = getToken();
 
-        "https://ingete-backend.onrender.com/tasks",
-
+      const response = await axios.post(
+        `${API}/tasks`,
         {
-          titulo,
-          responsable,
-          estado,
-          fecha
+          titulo: form.titulo,
+          responsable: form.responsable,
+          project_id: Number(form.project_id),
+          estado: form.estado,
+          fecha: form.fecha,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
         }
+      );
 
-      )
+      alert(
+        response.data?.message ||
+        "Tarea guardada correctamente."
+      );
 
-      alert("Tarea guardada")
+      cerrarFormulario();
 
-      setTitulo("")
-      setResponsable("")
-      setEstado("")
-      setFecha("")
-
-      getTasks()
-
-    } catch (error) {
-
-      console.log(error)
-
-    }
-
-  }
-
-  // =========================
-  // ELIMINAR TAREA
-  // =========================
-
-  const deleteTask = async (id) => {
-
-    try {
-
-      await axios.delete(
-        `https://ingete-backend.onrender.com/tasks/${id}`
-      )
-
-      getTasks()
+      getTasks();
 
     } catch (error) {
 
-      console.log(error)
+      console.error(
+        "Error guardando tarea:",
+        error
+      );
+
+      alert(
+        error.response?.data?.message ||
+        "No se pudo guardar la tarea."
+      );
 
     }
 
-  }
+  };
 
-  // =========================
+  // =====================================================
+  // PREPARAR EDICIÓN
+  // =====================================================
+
+  const startEdit = (task) => {
+
+    setEditingId(task.id);
+
+    setForm({
+
+      titulo:
+        task.titulo || "",
+
+      responsable:
+        task.responsable || "",
+
+      project_id:
+        task.project_id
+          ? String(task.project_id)
+          : "",
+
+      estado:
+        task.estado || "",
+
+      fecha:
+        task.fecha
+          ? String(task.fecha).split("T")[0]
+          : "",
+
+    });
+
+    setMostrarFormulario(true);
+
+  };
+
+  // =====================================================
   // ACTUALIZAR TAREA
-  // =========================
+  // =====================================================
 
-  const updateTask = async () => {
+  const updateTask = async (e) => {
 
-    try {
+    e.preventDefault();
 
-      await axios.put(
+    if (!form.titulo.trim()) {
 
-        `https://ingete-backend.onrender.com/tasks/${editingId}`,
+      alert(
+        "Ingrese el título de la tarea."
+      );
 
-        {
-          titulo,
-          responsable,
-          estado,
-          fecha
-        }
-
-      )
-
-      alert("Tarea actualizada")
-
-      setTitulo("")
-      setResponsable("")
-      setEstado("")
-      setFecha("")
-
-      setEditingId(null)
-
-      getTasks()
-
-    } catch (error) {
-
-      console.log(error)
+      return;
 
     }
 
-  }
+    if (!form.responsable.trim()) {
 
-  // =========================
-  // EDITAR TAREA
-  // =========================
+      alert(
+        "Ingrese el responsable de la tarea."
+      );
 
-  const editTask = (task) => {
+      return;
 
-    setTitulo(task.titulo)
+    }
 
-    setResponsable(task.responsable)
+    if (!form.project_id) {
 
-    setEstado(task.estado)
+      alert(
+        "Seleccione el proyecto."
+      );
 
-    setFecha(
-      task.fecha?.split("T")[0]
-    )
+      return;
 
-    setEditingId(task.id)
+    }
 
-  }
+    if (!form.estado) {
 
-  // =========================
-  // FILTRAR
-  // =========================
+      alert(
+        "Seleccione el estado de la tarea."
+      );
+
+      return;
+
+    }
+
+    if (!form.fecha) {
+
+      alert(
+        "Seleccione la fecha de la tarea."
+      );
+
+      return;
+
+    }
+
+    try {
+
+      const token = getToken();
+
+      const response = await axios.put(
+        `${API}/tasks/${editingId}`,
+        {
+          titulo: form.titulo,
+          responsable: form.responsable,
+          project_id: Number(form.project_id),
+          estado: form.estado,
+          fecha: form.fecha,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      alert(
+        response.data?.message ||
+        "Tarea actualizada correctamente."
+      );
+
+      cerrarFormulario();
+
+      getTasks();
+
+    } catch (error) {
+
+      console.error(
+        "Error actualizando tarea:",
+        error
+      );
+
+      alert(
+        error.response?.data?.message ||
+        "No se pudo actualizar la tarea."
+      );
+
+    }
+
+  };
+
+  // =====================================================
+  // ELIMINAR TAREA
+  // =====================================================
+
+  const deleteTask = async (task) => {
+
+    const confirmar = window.confirm(
+      `¿Deseas eliminar la tarea "${task.titulo}"?`
+    );
+
+    if (!confirmar) {
+      return;
+    }
+
+    try {
+
+      const token = getToken();
+
+      const response = await axios.delete(
+        `${API}/tasks/${task.id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      alert(
+        response.data?.message ||
+        "Tarea eliminada correctamente."
+      );
+
+      getTasks();
+
+    } catch (error) {
+
+      console.error(
+        "Error eliminando tarea:",
+        error
+      );
+
+      alert(
+        error.response?.data?.message ||
+        "No se pudo eliminar la tarea."
+      );
+
+    }
+
+  };
+
+  // =====================================================
+  // CERRAR FORMULARIO
+  // =====================================================
+
+  const cerrarFormulario = () => {
+
+    setMostrarFormulario(false);
+
+    setEditingId(null);
+
+    setForm({
+      titulo: "",
+      responsable: "",
+      project_id: "",
+      estado: "",
+      fecha: "",
+    });
+
+  };
+
+  // =====================================================
+  // FILTRAR TAREAS
+  // =====================================================
 
   const filteredTasks =
+    tasks.filter((task) => {
 
-    tasks.filter((task) =>
+      const texto =
+        search.toLowerCase();
 
-      task.titulo
-        .toLowerCase()
-        .includes(search.toLowerCase())
+      return (
 
-    )
+        (task.titulo || "")
+          .toLowerCase()
+          .includes(texto)
+
+        ||
+
+        (task.responsable || "")
+          .toLowerCase()
+          .includes(texto)
+
+        ||
+
+        (task.proyecto || "")
+          .toLowerCase()
+          .includes(texto)
+
+        ||
+
+        (task.estado || "")
+          .toLowerCase()
+          .includes(texto)
+
+      );
+
+    });
+
+  // =====================================================
+  // COLOR ESTADO
+  // =====================================================
+
+  const colorEstado = (estado) => {
+
+    if (
+      estado === "Completado" ||
+      estado === "Completada"
+    ) {
+
+      return "bg-green-100 text-green-700";
+
+    }
+
+    if (estado === "En proceso") {
+
+      return "bg-blue-100 text-blue-700";
+
+    }
+
+    if (estado === "Pendiente") {
+
+      return "bg-yellow-100 text-yellow-700";
+
+    }
+
+    return "bg-gray-100 text-gray-700";
+
+  };
+
+  // =====================================================
+  // RETURN
+  // =====================================================
 
   return (
 
-    <div className="flex flex-col md:flex-row">
+    <div className="flex">
 
-      {/* SIDEBAR */}
+      {/* =================================================
+          SIDEBAR
+      ================================================= */}
 
-      <div className="w-full md:w-64 min-h-screen bg-blue-900 text-white p-5">
+      <Sidebar />
 
-        <h1 className="text-3xl font-bold mb-10">
-          Ingetec
-        </h1>
+      {/* =================================================
+          CONTENIDO
+      ================================================= */}
 
-        <ul className="space-y-4">
+      <div className="flex-1 bg-slate-100 min-h-screen">
 
-          <Link to="/dashboard">
+        <Navbar />
 
-            <li className="hover:bg-blue-700 p-3 rounded-lg">
-              Dashboard
-            </li>
+        <div className="p-8">
 
-          </Link>
+          <div className="bg-white rounded-2xl shadow-xl p-8">
 
-          <Link to="/projects">
+            {/* =================================================
+                ENCABEZADO
+            ================================================= */}
 
-            <li className="hover:bg-blue-700 p-3 rounded-lg">
-              Proyectos
-            </li>
+            <div className="flex justify-between items-center">
 
-          </Link>
+              <div>
 
-          <Link to="/tasks">
+                <h1 className="text-4xl font-bold">
 
-            <li className="bg-blue-700 p-3 rounded-lg">
-              Tareas
-            </li>
+                  Gestión de Tareas
 
-          </Link>
+                </h1>
 
-          <Link to="/reports">
+                <p className="text-gray-500 mt-2">
 
-            <li className="hover:bg-blue-700 p-3 rounded-lg">
-              Reportes
-            </li>
+                  Administra y supervisa las tareas de Ingetec.
 
-          </Link>
+                </p>
 
-        </ul>
+              </div>
 
-      </div>
+              <button
+                onClick={nuevaTarea}
+                className="flex items-center gap-3 bg-blue-700 hover:bg-blue-800 text-white px-6 py-3 rounded-xl shadow-lg"
+              >
 
-      {/* CONTENIDO */}
+                <FaPlus />
 
-      <div className={`
+                Nueva Tarea
 
-        flex-1 p-10
+              </button>
 
-        ${darkMode
-          ? "bg-gray-900 text-white"
-          : "bg-gray-100 text-black"
-        }
+            </div>
 
-      `}>
+            {/* =================================================
+                BUSCADOR
+            ================================================= */}
 
-        <h2 className="text-4xl font-bold mb-10">
-          Gestión de Tareas
-        </h2>
+            <div className="relative mt-8 mb-6">
 
-        <div className="mt-6 mb-6">
+              <FaSearch
+                className="absolute left-4 top-4 text-gray-400"
+              />
 
-          <input
+              <input
+                type="text"
+                placeholder="Buscar tarea..."
+                value={search}
+                onChange={(e) =>
+                  setSearch(e.target.value)
+                }
+                className="w-full border rounded-xl pl-12 p-3 outline-none focus:ring-2 focus:ring-blue-500"
+              />
 
-            type="text"
+            </div>
 
-            placeholder="Buscar tarea..."
+            {/* =================================================
+                TABLA
+            ================================================= */}
 
-            value={search}
+            <div className="overflow-x-auto">
 
-            onChange={(e) =>
-              setSearch(e.target.value)
-            }
+              <table className="w-full">
 
-            className="w-full border p-4 rounded-xl text-black"
+                <thead>
 
-          />
+                  <tr className="border-b">
 
-        </div>
+                    <th className="text-left py-3">
+                      ID
+                    </th>
 
-        {/* FORMULARIO */}
+                    <th className="text-left">
+                      Tarea
+                    </th>
 
-        <div className={`
+                    <th className="text-left">
+                      Proyecto
+                    </th>
 
-          p-8 rounded-3xl shadow-xl mb-10
+                    <th>
+                      Responsable
+                    </th>
 
-          ${darkMode
-            ? "bg-gray-800"
-            : "bg-white"
-          }
+                    <th>
+                      Estado
+                    </th>
 
-        `}>
+                    <th>
+                      Fecha
+                    </th>
 
-          <h3 className="text-3xl font-bold mb-6">
+                    <th>
+                      Acciones
+                    </th>
 
-            {editingId
-              ? "Editar Tarea"
-              : "Registrar Tarea"
-            }
+                  </tr>
 
-          </h3>
+                </thead>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <tbody>
 
-            <input
-              type="text"
-              placeholder="Título"
-              value={titulo}
-              onChange={(e) =>
-                setTitulo(e.target.value)
-              }
-              className="border p-4 rounded-xl text-black"
-            />
+                  {filteredTasks.length === 0 ? (
 
-            <input
-              type="text"
-              placeholder="Responsable"
-              value={responsable}
-              onChange={(e) =>
-                setResponsable(e.target.value)
-              }
-              className="border p-4 rounded-xl text-black"
-            />
+                    <tr>
 
-            <select
-              value={estado}
-              onChange={(e) =>
-                setEstado(e.target.value)
-              }
-              className="border p-4 rounded-xl text-black"
-            >
+                      <td
+                        colSpan="7"
+                        className="text-center py-8 text-gray-500"
+                      >
 
-              <option value="">
-                Seleccione estado
-              </option>
+                        No se encontraron tareas.
 
-              <option value="Pendiente">
-                Pendiente
-              </option>
+                      </td>
 
-              <option value="En proceso">
-                En proceso
-              </option>
+                    </tr>
 
-              <option value="Completada">
-                Completada
-              </option>
+                  ) : (
 
-            </select>
+                    filteredTasks.map(
+                      (task) => (
 
-            <input
-              type="date"
-              value={fecha}
-              onChange={(e) =>
-                setFecha(e.target.value)
-              }
-              className="border p-4 rounded-xl text-black"
-            />
+                        <tr
+                          key={task.id}
+                          className="border-b hover:bg-slate-50"
+                        >
+
+                          <td className="py-4">
+
+                            {task.id}
+
+                          </td>
+
+                          <td>
+
+                            <span className="font-semibold">
+
+                              {task.titulo}
+
+                            </span>
+
+                          </td>
+
+                          <td>
+
+                            <span className="font-semibold">
+
+                              {task.proyecto ||
+                                "Sin proyecto"}
+
+                            </span>
+
+                          </td>
+
+                          <td className="text-center">
+
+                            {task.responsable}
+
+                          </td>
+
+                          <td className="text-center">
+
+                            <span
+                              className={`px-3 py-1 rounded-full text-sm font-semibold ${colorEstado(
+                                task.estado
+                              )}`}
+                            >
+
+                              {task.estado}
+
+                            </span>
+
+                          </td>
+
+                          <td className="text-center">
+
+                            {task.fecha
+                              ? String(
+                                  task.fecha
+                                ).split("T")[0]
+                              : "-"}
+
+                          </td>
+
+                          <td>
+
+                            <div className="flex justify-center gap-4">
+
+                              <button
+                                onClick={() =>
+                                  startEdit(task)
+                                }
+                                className="hover:scale-110 transition"
+                                title="Editar tarea"
+                              >
+
+                                <FaEdit className="text-blue-700" />
+
+                              </button>
+
+                              <button
+                                onClick={() =>
+                                  deleteTask(task)
+                                }
+                                className="hover:scale-110 transition"
+                                title="Eliminar tarea"
+                              >
+
+                                <FaTrash className="text-red-600" />
+
+                              </button>
+
+                            </div>
+
+                          </td>
+
+                        </tr>
+
+                      )
+                    )
+
+                  )}
+
+                </tbody>
+
+              </table>
+
+            </div>
 
           </div>
 
-          <button
-
-            onClick={
-              editingId
-                ? updateTask
-                : saveTask
-            }
-
-            className="bg-blue-700 text-white px-8 py-3 rounded-xl mt-6"
-
-          >
-
-            {editingId
-              ? "Actualizar Tarea"
-              : "Guardar Tarea"
-            }
-
-          </button>
-
-        </div>
-
-        {/* TABLA */}
-
-        <div className={`
-
-          rounded-3xl shadow-xl overflow-x-auto
-
-          ${darkMode
-            ? "bg-gray-800"
-            : "bg-white"
-          }
-
-        `}>
-
-          <table className="w-full">
-
-            <thead className="bg-blue-700 text-white">
-
-              <tr>
-
-                <th className="p-4">ID</th>
-                <th className="p-4">Título</th>
-                <th className="p-4">Responsable</th>
-                <th className="p-4">Estado</th>
-                <th className="p-4">Fecha</th>
-                <th className="p-4">Acciones</th>
-
-              </tr>
-
-            </thead>
-
-            <tbody>
-
-              {filteredTasks.map((task) => (
-
-                <tr
-                  key={task.id}
-                  className="text-center border-b"
-                >
-
-                  <td className="p-4">
-                    {task.id}
-                  </td>
-
-                  <td className="p-4">
-                    {task.titulo}
-                  </td>
-
-                  <td className="p-4">
-                    {task.responsable}
-                  </td>
-
-                  <td className="p-4">
-                    {task.estado}
-                  </td>
-
-                  <td className="p-4">
-                    {task.fecha?.split("T")[0]}
-                  </td>
-
-                  <td className="p-4 space-x-2">
-
-                    <button
-
-                      onClick={() =>
-                        editTask(task)
-                      }
-
-                      className="bg-yellow-500 text-white px-4 py-2 rounded-lg"
-
-                    >
-                      Editar
-                    </button>
-
-                    <button
-
-                      onClick={() =>
-                        deleteTask(task.id)
-                      }
-
-                      className="bg-red-600 text-white px-4 py-2 rounded-lg"
-
-                    >
-                      Eliminar
-                    </button>
-
-                  </td>
-
-                </tr>
-
-              ))}
-
-            </tbody>
-
-          </table>
-
         </div>
 
       </div>
 
+      {/* =====================================================
+          MODAL NUEVA / EDITAR TAREA
+      ===================================================== */}
+
+      {mostrarFormulario && (
+
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+
+            {/* CABECERA */}
+
+            <div className="flex justify-between items-center p-6 border-b">
+
+              <div>
+
+                <h2 className="text-2xl font-bold">
+
+                  {editingId
+                    ? "Editar Tarea"
+                    : "Nueva Tarea"}
+
+                </h2>
+
+                <p className="text-gray-500 mt-1">
+
+                  {editingId
+                    ? "Actualiza la información de la tarea."
+                    : "Registra una nueva tarea para un proyecto de Ingetec."}
+
+                </p>
+
+              </div>
+
+              <button
+                onClick={cerrarFormulario}
+                className="text-gray-500 hover:text-red-600 text-xl"
+              >
+
+                <FaTimes />
+
+              </button>
+
+            </div>
+
+            {/* FORMULARIO */}
+
+            <form
+              onSubmit={
+                editingId
+                  ? updateTask
+                  : saveTask
+              }
+              className="p-6"
+            >
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+                {/* TÍTULO */}
+
+                <div>
+
+                  <label className="block font-semibold mb-2">
+
+                    Título de la tarea
+
+                  </label>
+
+                  <input
+                    type="text"
+                    name="titulo"
+                    value={form.titulo}
+                    onChange={handleChange}
+                    placeholder="Ingrese el título de la tarea"
+                    className="w-full border rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+
+                </div>
+
+                {/* RESPONSABLE */}
+
+                <div>
+
+                  <label className="block font-semibold mb-2">
+
+                    Responsable
+
+                  </label>
+
+                  <input
+                    type="text"
+                    name="responsable"
+                    value={form.responsable}
+                    onChange={handleChange}
+                    placeholder="Nombre del responsable"
+                    className="w-full border rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+
+                </div>
+
+                {/* PROYECTO */}
+
+                <div>
+
+                  <label className="block font-semibold mb-2">
+
+                    Proyecto
+
+                  </label>
+
+                  <select
+                    name="project_id"
+                    value={form.project_id}
+                    onChange={handleChange}
+                    className="w-full border rounded-xl p-3 bg-white outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+
+                    <option value="">
+
+                      Seleccione proyecto
+
+                    </option>
+
+                    {projects.map(
+                      (project) => (
+
+                        <option
+                          key={project.id}
+                          value={project.id}
+                        >
+
+                          {project.nombre}
+
+                        </option>
+
+                      )
+                    )}
+
+                  </select>
+
+                </div>
+
+                {/* ESTADO */}
+
+                <div>
+
+                  <label className="block font-semibold mb-2">
+
+                    Estado
+
+                  </label>
+
+                  <select
+                    name="estado"
+                    value={form.estado}
+                    onChange={handleChange}
+                    className="w-full border rounded-xl p-3 bg-white outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+
+                    <option value="">
+
+                      Seleccione estado
+
+                    </option>
+
+                    <option value="Pendiente">
+
+                      Pendiente
+
+                    </option>
+
+                    <option value="En proceso">
+
+                      En proceso
+
+                    </option>
+
+                    <option value="Completado">
+
+                      Completado
+
+                    </option>
+
+                  </select>
+
+                </div>
+
+                {/* FECHA */}
+
+                <div>
+
+                  <label className="block font-semibold mb-2">
+
+                    Fecha
+
+                  </label>
+
+                  <input
+                    type="date"
+                    name="fecha"
+                    value={form.fecha}
+                    onChange={handleChange}
+                    className="w-full border rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+
+                </div>
+
+              </div>
+
+              {/* AVISO */}
+
+              <div className="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
+
+                <p className="text-blue-800 text-sm">
+
+                  <strong>Administrador:</strong>{" "}
+
+                  desde esta sección puedes registrar,
+                  editar y eliminar tareas de los proyectos.
+
+                </p>
+
+              </div>
+
+              {/* BOTONES */}
+
+              <div className="flex justify-end gap-4 mt-6">
+
+                <button
+                  type="button"
+                  onClick={cerrarFormulario}
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl border border-gray-300 hover:bg-gray-100"
+                >
+
+                  <FaTimes />
+
+                  Cancelar
+
+                </button>
+
+                <button
+                  type="submit"
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-blue-700 hover:bg-blue-800 text-white"
+                >
+
+                  <FaPlus />
+
+                  {editingId
+                    ? "Guardar cambios"
+                    : "Crear Tarea"}
+
+                </button>
+
+              </div>
+
+            </form>
+
+          </div>
+
+        </div>
+
+      )}
+
     </div>
 
-  )
+  );
 
 }
-
-export default Tasks

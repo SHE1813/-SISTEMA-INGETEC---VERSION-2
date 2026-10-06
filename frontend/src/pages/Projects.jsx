@@ -1,509 +1,1297 @@
-import { useEffect, useState } from "react"
-import {
-  useContext
-} from "react"
-
-import axios from "axios"
+import { useEffect, useState } from "react";
+import axios from "axios";
 
 import {
-  Link
-} from "react-router-dom"
+  FaSearch,
+  FaPlus,
+  FaEdit,
+  FaTrash,
+  FaTimes,
+} from "react-icons/fa";
 
-import {
-  ThemeContext
-} from "../context/ThemeContext"
+import Sidebar from "../components/Sidebar";
+import Navbar from "../components/Navbar";
 
-function Projects() {
+const API = "http://127.0.0.1:3000";
 
-  const theme = useContext(ThemeContext)
+export default function Projects() {
 
-  const darkMode = theme?.darkMode || false
+  // ==========================================
+  // ESTADOS
+  // ==========================================
 
-  const [projects, setProjects] = useState([])
+  const [projects, setProjects] = useState([]);
+  const [search, setSearch] = useState("");
 
-  const [search, setSearch] =
-  useState("")
+  const [mostrarFormulario, setMostrarFormulario] =
+    useState(false);
 
-  const [editingId, setEditingId] = useState(null)
+  const [editingId, setEditingId] =
+    useState(null);
 
   const [form, setForm] = useState({
-
     nombre: "",
     responsable: "",
     estado: "",
-    fecha: ""
+    fecha: "",
+  });
 
-  })
 
-  // =========================
+  // ==========================================
+  // TOKEN
+  // ==========================================
+
+  const getToken = () => {
+    return localStorage.getItem("token");
+  };
+
+
+  // ==========================================
   // OBTENER PROYECTOS
-  // =========================
-
-  useEffect(() => {
-
-    getProjects()
-
-  }, [])
+  // ==========================================
 
   const getProjects = async () => {
 
     try {
 
-      const response = await axios.get(
-        "https://ingete-backend.onrender.com/projects"
-      )
+      const token = getToken();
 
-      setProjects(response.data)
+      if (!token) {
+        console.error("No existe token de autenticación.");
+        return;
+      }
+
+      const response = await axios.get(
+        `${API}/projects`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      console.log("Proyectos obtenidos:", response.data);
+
+      setProjects(
+        Array.isArray(response.data)
+          ? response.data
+          : []
+      );
 
     } catch (error) {
 
-      console.log(error)
+      console.error(
+        "❌ Error obteniendo proyectos:",
+        error
+      );
+
+      console.error(
+        "Respuesta del servidor:",
+        error.response?.data
+      );
+
+      if (
+        error.response?.status === 401 ||
+        error.response?.status === 403
+      ) {
+
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+
+        alert(
+          error.response?.data?.message ||
+          "Tu sesión ha expirado o no tienes permisos."
+        );
+
+        window.location.href = "/";
+
+      } else {
+
+        alert(
+          error.response?.data?.message ||
+          error.response?.data?.error ||
+          "No se pudieron obtener los proyectos."
+        );
+
+      }
 
     }
 
-  }
+  };
 
-  // =========================
-  // CAPTURAR INPUTS
-  // =========================
+
+  // ==========================================
+  // CARGAR AL INICIAR
+  // ==========================================
+
+  useEffect(() => {
+
+    getProjects();
+
+  }, []);
+
+
+  // ==========================================
+  // CAMBIAR FORMULARIO
+  // ==========================================
 
   const handleChange = (e) => {
 
-    setForm({
+    const {
+      name,
+      value
+    } = e.target;
 
+    setForm({
       ...form,
+      [name]: value,
+    });
 
-      [e.target.name]: e.target.value
+  };
 
-    })
 
-  }
+  // ==========================================
+  // NUEVO PROYECTO
+  // ==========================================
 
-  // =========================
-  // GUARDAR
-  // =========================
+  const nuevoProyecto = () => {
 
-  const saveProject = async () => {
-
-    try {
-
-      await axios.post(
-        "https://ingete-backend.onrender.com/projects",
-        form
-      )
-
-      alert("Proyecto guardado")
-
-      getProjects()
-
-      resetForm()
-
-    } catch (error) {
-
-      console.log(error)
-
-    }
-
-  }
-
-  // =========================
-  // PREPARAR EDICIÓN
-  // =========================
-
-  const startEdit = (project) => {
-
-    setEditingId(project.id)
+    setEditingId(null);
 
     setForm({
-
-      nombre: project.nombre,
-      responsable: project.responsable,
-      estado: project.estado,
-      fecha: project.fecha?.split("T")[0]
-
-    })
-
-  }
-
-  // =========================
-  // ACTUALIZAR
-  // =========================
-
-  const updateProject = async () => {
-
-    try {
-
-      await axios.put(
-
-        `https://ingete-backend.onrender.com/projects/${editingId}`,
-
-        form
-
-      )
-
-      alert("Proyecto actualizado")
-
-      getProjects()
-
-      resetForm()
-
-    } catch (error) {
-
-      console.log(error)
-
-    }
-
-  }
-
-  // =========================
-  // ELIMINAR
-  // =========================
-
-  const deleteProject = async (id) => {
-
-    const confirmar = confirm(
-      "¿Deseas eliminar este proyecto?"
-    )
-
-    if (!confirmar) return
-
-    try {
-
-      await axios.delete(
-        `https://ingete-backend.onrender.com/projects/${id}`,
-      )
-
-      alert("Proyecto eliminado")
-
-      getProjects()
-
-    } catch (error) {
-
-      console.log(error)
-
-    }
-
-  }
-
-  // =========================
-  // LIMPIAR FORMULARIO
-  // =========================
-
-  const resetForm = () => {
-
-    setForm({
-
       nombre: "",
       responsable: "",
       estado: "",
-      fecha: ""
+      fecha: "",
+    });
 
-    })
+    setMostrarFormulario(true);
 
-    setEditingId(null)
-
-  }
+  };
 
 
-  const filteredProjects =
+  // ==========================================
+  // GUARDAR PROYECTO
+  // ==========================================
 
-  projects.filter((project) =>
+  const saveProject = async (e) => {
 
-    project.nombre
-      .toLowerCase()
-      .includes(search.toLowerCase())
+    e.preventDefault();
 
-  )
-  return (
+    // -------------------------------
+    // VALIDACIONES
+    // -------------------------------
 
-    <div className="flex flex-col md:flex-row">
+    if (!form.nombre.trim()) {
 
-      {/* SIDEBAR */}
+      alert(
+        "Ingrese el nombre del proyecto."
+      );
 
-      <div className="w-full md:w-64 min-h-screen bg-blue-900 text-white p-5">
-
-        <h1 className="text-3xl font-bold mb-10">
-          Ingetec
-        </h1>
-
-        <ul className="space-y-4">
-
-          <Link to="/dashboard">
-            <li className="hover:bg-blue-700 p-3 rounded-lg">
-              Dashboard
-            </li>
-          </Link>
-
-          <Link to="/projects">
-            <li className="bg-blue-700 p-3 rounded-lg">
-              Proyectos
-            </li>
-          </Link>
-
-          <Link to="/tasks">
-            <li className="hover:bg-blue-700 p-3 rounded-lg">
-              Tareas
-            </li>
-          </Link>
-
-          <Link to="/reports">
-            <li className="hover:bg-blue-700 p-3 rounded-lg">
-              Reportes
-            </li>
-          </Link>
-
-        </ul>
-
-      </div>
-
-      {/* CONTENIDO */}
-
-      <div
-        className={`
-
-          flex-1 p-5 md:p-10
-
-          ${darkMode
-            ? "bg-gray-900 text-white"
-            : "bg-gray-100 text-black"
-          }
-
-        `}
-      >
-
-        <h2 className="text-4xl font-bold mb-10">
-          Gestión de Proyectos
-        </h2>
-
-        <div className="mt-6 mb-6">
-
-  <input
-
-    type="text"
-
-    placeholder="Buscar proyecto..."
-
-    value={search}
-
-    onChange={(e) =>
-      setSearch(e.target.value)
+      return;
     }
 
-    className="w-full border p-4 rounded-xl text-black"
 
-  />
+    if (!form.responsable.trim()) {
 
-</div>
+      alert(
+        "Ingrese el responsable del proyecto."
+      );
 
-        {/* FORMULARIO */}
+      return;
+    }
 
-        <div
-          className={`
 
-            rounded-2xl shadow-xl p-6 mb-10
+    if (!form.estado) {
 
-            ${darkMode
-              ? "bg-gray-800"
-              : "bg-white"
-            }
+      alert(
+        "Seleccione el estado del proyecto."
+      );
 
-          `}
-        >
+      return;
+    }
 
-          <h3 className="text-2xl font-bold mb-6">
 
-            {editingId
-              ? "Editar Proyecto"
-              : "Registrar Proyecto"
-            }
+    if (!form.fecha) {
 
-          </h3>
+      alert(
+        "Seleccione la fecha del proyecto."
+      );
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      return;
+    }
 
-            <input
-              type="text"
-              name="nombre"
-              value={form.nombre}
-              onChange={handleChange}
-              placeholder="Nombre del proyecto"
-              className="border p-3 rounded-xl text-black"
-            />
 
-            <input
-              type="text"
-              name="responsable"
-              value={form.responsable}
-              onChange={handleChange}
-              placeholder="Responsable"
-              className="border p-3 rounded-xl text-black"
-            />
+    // -------------------------------
+    // GUARDAR
+    // -------------------------------
 
-            <select
-              name="estado"
-              value={form.estado}
-              onChange={handleChange}
-              className="border p-3 rounded-xl text-black"
-            >
+    try {
 
-              <option value="">
-                Seleccione estado
-              </option>
+      const token = getToken();
 
-              <option value="Pendiente">
-                Pendiente
-              </option>
+      if (!token) {
 
-              <option value="En proceso">
-                En proceso
-              </option>
+        alert(
+          "No existe una sesión activa. Inicie sesión nuevamente."
+        );
 
-              <option value="Completado">
-                Completado
-              </option>
+        window.location.href = "/";
 
-            </select>
+        return;
+      }
 
-            <input
-              type="date"
-              name="fecha"
-              value={form.fecha}
-              onChange={handleChange}
-              className="border p-3 rounded-xl text-black"
-            />
 
-          </div>
+      console.log(
+        "📤 Enviando proyecto:",
+        form
+      );
 
-          <div className="mt-6 flex gap-4">
 
-            {editingId ? (
+      const response = await axios.post(
+        `${API}/projects`,
+        {
+          nombre: form.nombre.trim(),
+          responsable: form.responsable.trim(),
+          estado: form.estado,
+          fecha: form.fecha,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
-              <>
-                <button
-                  onClick={updateProject}
-                  className="bg-yellow-500 text-white px-6 py-3 rounded-xl"
-                >
-                  Actualizar
-                </button>
 
-                <button
-                  onClick={resetForm}
-                  className="bg-gray-500 text-white px-6 py-3 rounded-xl"
-                >
-                  Cancelar
-                </button>
-              </>
+      console.log(
+        "✅ Respuesta del servidor:",
+        response.data
+      );
 
-            ) : (
+
+      alert(
+        response.data?.message ||
+        response.data?.mensaje ||
+        "Proyecto guardado correctamente."
+      );
+
+
+      cerrarFormulario();
+
+      await getProjects();
+
+
+    } catch (error) {
+
+      // ==================================
+      // MOSTRAR ERROR REAL
+      // ==================================
+
+      console.error(
+        "===================================="
+      );
+
+      console.error(
+        "❌ ERROR AL GUARDAR PROYECTO"
+      );
+
+      console.error(
+        "STATUS:",
+        error.response?.status
+      );
+
+      console.error(
+        "DATA:",
+        error.response?.data
+      );
+
+      console.error(
+        "MESSAGE:",
+        error.response?.data?.message
+      );
+
+      console.error(
+        "ERROR:",
+        error.response?.data?.error
+      );
+
+      console.error(
+        "CODE:",
+        error.response?.data?.code
+      );
+
+      console.error(
+        "SQL MESSAGE:",
+        error.response?.data?.sqlMessage
+      );
+
+      console.error(
+        "AXIOS:",
+        error.message
+      );
+
+      console.error(
+        "===================================="
+      );
+
+
+      const datos =
+        error.response?.data;
+
+
+      // -------------------------------
+      // SESIÓN
+      // -------------------------------
+
+      if (
+        error.response?.status === 401 ||
+        error.response?.status === 403
+      ) {
+
+        alert(
+          datos?.message ||
+          "Tu sesión ha expirado o no tienes permisos."
+        );
+
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+
+        window.location.href = "/";
+
+        return;
+      }
+
+
+      // -------------------------------
+      // ERROR MYSQL / SERVIDOR
+      // -------------------------------
+
+      const mensajeError =
+        datos?.sqlMessage ||
+        datos?.error ||
+        datos?.message ||
+        error.message ||
+        "No se pudo guardar el proyecto.";
+
+
+      alert(
+        `Error al guardar proyecto:\n\n${mensajeError}`
+      );
+
+    }
+
+  };
+
+
+  // ==========================================
+  // PREPARAR EDICIÓN
+  // ==========================================
+
+  const startEdit = (project) => {
+
+    setEditingId(project.id);
+
+    setForm({
+      nombre: project.nombre || "",
+
+      responsable:
+        project.responsable || "",
+
+      estado:
+        project.estado || "",
+
+      fecha:
+        project.fecha
+          ? project.fecha.split("T")[0]
+          : "",
+    });
+
+    setMostrarFormulario(true);
+
+  };
+
+
+  // ==========================================
+  // ACTUALIZAR PROYECTO
+  // ==========================================
+
+  const updateProject = async (e) => {
+
+    e.preventDefault();
+
+
+    // -------------------------------
+    // VALIDACIONES
+    // -------------------------------
+
+    if (!form.nombre.trim()) {
+
+      alert(
+        "Ingrese el nombre del proyecto."
+      );
+
+      return;
+    }
+
+
+    if (!form.responsable.trim()) {
+
+      alert(
+        "Ingrese el responsable del proyecto."
+      );
+
+      return;
+    }
+
+
+    if (!form.estado) {
+
+      alert(
+        "Seleccione el estado del proyecto."
+      );
+
+      return;
+    }
+
+
+    if (!form.fecha) {
+
+      alert(
+        "Seleccione la fecha del proyecto."
+      );
+
+      return;
+    }
+
+
+    try {
+
+      const token = getToken();
+
+      if (!token) {
+
+        alert(
+          "No existe una sesión activa. Inicie sesión nuevamente."
+        );
+
+        window.location.href = "/";
+
+        return;
+      }
+
+
+      console.log(
+        "📤 Actualizando proyecto:",
+        form
+      );
+
+
+      const response = await axios.put(
+        `${API}/projects/${editingId}`,
+        {
+          nombre: form.nombre.trim(),
+          responsable: form.responsable.trim(),
+          estado: form.estado,
+          fecha: form.fecha,
+        },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+
+      console.log(
+        "✅ Proyecto actualizado:",
+        response.data
+      );
+
+
+      alert(
+        response.data?.message ||
+        response.data?.mensaje ||
+        "Proyecto actualizado correctamente."
+      );
+
+
+      cerrarFormulario();
+
+      await getProjects();
+
+
+    } catch (error) {
+
+      console.error(
+        "===================================="
+      );
+
+      console.error(
+        "❌ ERROR ACTUALIZANDO PROYECTO"
+      );
+
+      console.error(
+        "STATUS:",
+        error.response?.status
+      );
+
+      console.error(
+        "DATA:",
+        error.response?.data
+      );
+
+      console.error(
+        "MESSAGE:",
+        error.response?.data?.message
+      );
+
+      console.error(
+        "ERROR:",
+        error.response?.data?.error
+      );
+
+      console.error(
+        "SQL MESSAGE:",
+        error.response?.data?.sqlMessage
+      );
+
+      console.error(
+        "===================================="
+      );
+
+
+      const datos =
+        error.response?.data;
+
+
+      if (
+        error.response?.status === 401 ||
+        error.response?.status === 403
+      ) {
+
+        alert(
+          datos?.message ||
+          "No tienes permisos para actualizar este proyecto."
+        );
+
+        return;
+      }
+
+
+      alert(
+        datos?.sqlMessage ||
+        datos?.error ||
+        datos?.message ||
+        error.message ||
+        "No se pudo actualizar el proyecto."
+      );
+
+    }
+
+  };
+
+
+  // ==========================================
+  // ELIMINAR PROYECTO
+  // ==========================================
+
+  const deleteProject = async (project) => {
+
+    const confirmar =
+      window.confirm(
+        `¿Deseas eliminar el proyecto "${project.nombre}"?`
+      );
+
+
+    if (!confirmar) {
+      return;
+    }
+
+
+    try {
+
+      const token = getToken();
+
+      if (!token) {
+
+        alert(
+          "No existe una sesión activa."
+        );
+
+        window.location.href = "/";
+
+        return;
+      }
+
+
+      const response = await axios.delete(
+        `${API}/projects/${project.id}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+
+      alert(
+        response.data?.message ||
+        response.data?.mensaje ||
+        "Proyecto eliminado correctamente."
+      );
+
+
+      await getProjects();
+
+
+    } catch (error) {
+
+      console.error(
+        "❌ Error eliminando proyecto:",
+        error
+      );
+
+      console.error(
+        "Respuesta:",
+        error.response?.data
+      );
+
+
+      const datos =
+        error.response?.data;
+
+
+      if (
+        error.response?.status === 401 ||
+        error.response?.status === 403
+      ) {
+
+        alert(
+          datos?.message ||
+          "No tienes permisos para eliminar proyectos."
+        );
+
+        return;
+      }
+
+
+      alert(
+        datos?.sqlMessage ||
+        datos?.error ||
+        datos?.message ||
+        "No se pudo eliminar el proyecto."
+      );
+
+    }
+
+  };
+
+
+  // ==========================================
+  // CERRAR FORMULARIO
+  // ==========================================
+
+  const cerrarFormulario = () => {
+
+    setMostrarFormulario(false);
+
+    setEditingId(null);
+
+    setForm({
+      nombre: "",
+      responsable: "",
+      estado: "",
+      fecha: "",
+    });
+
+  };
+
+
+  // ==========================================
+  // FILTRAR PROYECTOS
+  // ==========================================
+
+  const filteredProjects =
+    projects.filter((project) => {
+
+      const texto =
+        search.toLowerCase().trim();
+
+
+      return (
+
+        (project.nombre || "")
+          .toLowerCase()
+          .includes(texto)
+
+        ||
+
+        (project.responsable || "")
+          .toLowerCase()
+          .includes(texto)
+
+        ||
+
+        (project.estado || "")
+          .toLowerCase()
+          .includes(texto)
+
+      );
+
+    });
+
+
+  // ==========================================
+  // COLOR DEL ESTADO
+  // ==========================================
+
+  const colorEstado = (estado) => {
+
+    if (estado === "Completado") {
+
+      return "bg-green-100 text-green-700";
+
+    }
+
+
+    if (estado === "En proceso") {
+
+      return "bg-blue-100 text-blue-700";
+
+    }
+
+
+    if (estado === "Pendiente") {
+
+      return "bg-yellow-100 text-yellow-700";
+
+    }
+
+
+    return "bg-gray-100 text-gray-700";
+
+  };
+
+
+  // ==========================================
+  // INTERFAZ
+  // ==========================================
+
+  return (
+
+    <div className="flex">
+
+
+      {/* ====================================
+          SIDEBAR
+      ==================================== */}
+
+      <Sidebar />
+
+
+      {/* ====================================
+          CONTENIDO
+      ==================================== */}
+
+      <div className="flex-1 bg-slate-100 min-h-screen">
+
+        <Navbar />
+
+
+        <div className="p-8">
+
+          <div className="bg-white rounded-2xl shadow-xl p-8">
+
+
+            {/* =================================
+                ENCABEZADO
+            ================================= */}
+
+            <div className="flex justify-between items-center">
+
+              <div>
+
+                <h1 className="text-4xl font-bold">
+
+                  Gestión de Proyectos
+
+                </h1>
+
+                <p className="text-gray-500 mt-2">
+
+                  Administra y supervisa los proyectos de Ingetec.
+
+                </p>
+
+              </div>
+
 
               <button
-                onClick={saveProject}
-                className="bg-blue-700 text-white px-6 py-3 rounded-xl"
+                onClick={nuevoProyecto}
+                className="flex items-center gap-3 bg-blue-700 hover:bg-blue-800 text-white px-6 py-3 rounded-xl shadow-lg"
               >
-                Guardar Proyecto
+
+                <FaPlus />
+
+                Nuevo Proyecto
+
               </button>
 
-            )}
+            </div>
+
+
+            {/* =================================
+                BUSCADOR
+            ================================= */}
+
+            <div className="relative mt-8 mb-6">
+
+              <FaSearch
+                className="absolute left-4 top-4 text-gray-400"
+              />
+
+
+              <input
+                type="text"
+                placeholder="Buscar proyecto..."
+                value={search}
+                onChange={(e) =>
+                  setSearch(e.target.value)
+                }
+                className="w-full border rounded-xl pl-12 p-3 outline-none focus:ring-2 focus:ring-blue-500"
+              />
+
+            </div>
+
+
+            {/* =================================
+                TABLA
+            ================================= */}
+
+            <div className="overflow-x-auto">
+
+              <table className="w-full">
+
+                <thead>
+
+                  <tr className="border-b">
+
+                    <th className="text-left py-3">
+                      ID
+                    </th>
+
+                    <th className="text-left">
+                      Proyecto
+                    </th>
+
+                    <th className="text-center">
+                      Responsable
+                    </th>
+
+                    <th className="text-center">
+                      Estado
+                    </th>
+
+                    <th className="text-center">
+                      Fecha
+                    </th>
+
+                    <th className="text-center">
+                      Acciones
+                    </th>
+
+                  </tr>
+
+                </thead>
+
+
+                <tbody>
+
+                  {filteredProjects.length === 0 ? (
+
+                    <tr>
+
+                      <td
+                        colSpan="6"
+                        className="text-center py-8 text-gray-500"
+                      >
+
+                        No se encontraron proyectos.
+
+                      </td>
+
+                    </tr>
+
+                  ) : (
+
+                    filteredProjects.map(
+                      (project) => (
+
+                        <tr
+                          key={project.id}
+                          className="border-b hover:bg-slate-50"
+                        >
+
+                          <td className="py-4">
+
+                            {project.id}
+
+                          </td>
+
+
+                          <td>
+
+                            <span className="font-semibold">
+
+                              {project.nombre}
+
+                            </span>
+
+                          </td>
+
+
+                          <td className="text-center">
+
+                            {project.responsable}
+
+                          </td>
+
+
+                          <td className="text-center">
+
+                            <span
+                              className={`px-3 py-1 rounded-full text-sm font-semibold ${colorEstado(
+                                project.estado
+                              )}`}
+                            >
+
+                              {project.estado}
+
+                            </span>
+
+                          </td>
+
+
+                          <td className="text-center">
+
+                            {project.fecha
+                              ? project.fecha.split("T")[0]
+                              : "-"
+                            }
+
+                          </td>
+
+
+                          <td>
+
+                            <div className="flex justify-center gap-4">
+
+
+                              <button
+                                onClick={() =>
+                                  startEdit(project)
+                                }
+                                className="hover:scale-110 transition"
+                                title="Editar proyecto"
+                              >
+
+                                <FaEdit className="text-blue-700" />
+
+                              </button>
+
+
+                              <button
+                                onClick={() =>
+                                  deleteProject(project)
+                                }
+                                className="hover:scale-110 transition"
+                                title="Eliminar proyecto"
+                              >
+
+                                <FaTrash className="text-red-600" />
+
+                              </button>
+
+
+                            </div>
+
+                          </td>
+
+                        </tr>
+
+                      )
+                    )
+
+                  )}
+
+                </tbody>
+
+              </table>
+
+            </div>
 
           </div>
-
-        </div>
-
-        {/* TABLA */}
-
-        <div
-          className={`
-
-            rounded-2xl shadow-xl p-6 overflow-auto
-
-            ${darkMode
-              ? "bg-gray-800"
-              : "bg-white"
-            }
-
-          `}
-        >
-
-          <table className="w-full">
-
-            <thead>
-
-              <tr className="bg-blue-700 text-white">
-
-                <th className="p-3">ID</th>
-                <th className="p-3">Proyecto</th>
-                <th className="p-3">Responsable</th>
-                <th className="p-3">Estado</th>
-                <th className="p-3">Fecha</th>
-                <th className="p-3">Acciones</th>
-
-              </tr>
-
-            </thead>
-
-            <tbody>
-
-              {filteredProjects.map((project) => (
-
-                <tr
-                  key={project.id}
-                  className="border-b text-center"
-                >
-
-                  <td className="p-3">
-                    {project.id}
-                  </td>
-
-                  <td className="p-3">
-                    {project.nombre}
-                  </td>
-
-                  <td className="p-3">
-                    {project.responsable}
-                  </td>
-
-                  <td className="p-3">
-                    {project.estado}
-                  </td>
-
-                  <td className="p-3">
-                    {project.fecha?.split("T")[0]}
-                  </td>
-
-                  <td className="p-3 space-x-2">
-
-                    <button
-                      onClick={() => startEdit(project)}
-                      className="bg-yellow-500 text-white px-4 py-2 rounded-lg"
-                    >
-                      Editar
-                    </button>
-
-                    <button
-                      onClick={() => deleteProject(project.id)}
-                      className="bg-red-600 text-white px-4 py-2 rounded-lg"
-                    >
-                      Eliminar
-                    </button>
-
-                  </td>
-
-                </tr>
-
-              ))}
-
-            </tbody>
-
-          </table>
 
         </div>
 
       </div>
+
+
+      {/* ====================================
+          MODAL NUEVO / EDITAR
+      ==================================== */}
+
+      {mostrarFormulario && (
+
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+
+
+            {/* =================================
+                CABECERA DEL MODAL
+            ================================= */}
+
+            <div className="flex justify-between items-center p-6 border-b">
+
+              <div>
+
+                <h2 className="text-2xl font-bold">
+
+                  {editingId
+                    ? "Editar Proyecto"
+                    : "Nuevo Proyecto"
+                  }
+
+                </h2>
+
+
+                <p className="text-gray-500 mt-1">
+
+                  {editingId
+                    ? "Actualiza la información del proyecto."
+                    : "Registra un nuevo proyecto de Ingetec."
+                  }
+
+                </p>
+
+              </div>
+
+
+              <button
+                onClick={cerrarFormulario}
+                className="text-gray-500 hover:text-red-600 text-xl"
+              >
+
+                <FaTimes />
+
+              </button>
+
+            </div>
+
+
+            {/* =================================
+                FORMULARIO
+            ================================= */}
+
+            <form
+              onSubmit={
+                editingId
+                  ? updateProject
+                  : saveProject
+              }
+              className="p-6"
+            >
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+
+
+                {/* ==============================
+                    NOMBRE
+                ============================== */}
+
+                <div>
+
+                  <label className="block font-semibold mb-2">
+
+                    Nombre del proyecto
+
+                  </label>
+
+
+                  <input
+                    type="text"
+                    name="nombre"
+                    value={form.nombre}
+                    onChange={handleChange}
+                    placeholder="Ingrese el nombre del proyecto"
+                    className="w-full border rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+
+                </div>
+
+
+                {/* ==============================
+                    RESPONSABLE
+                ============================== */}
+
+                <div>
+
+                  <label className="block font-semibold mb-2">
+
+                    Responsable
+
+                  </label>
+
+
+                  <input
+                    type="text"
+                    name="responsable"
+                    value={form.responsable}
+                    onChange={handleChange}
+                    placeholder="Nombre del responsable"
+                    className="w-full border rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+
+                </div>
+
+
+                {/* ==============================
+                    ESTADO
+                ============================== */}
+
+                <div>
+
+                  <label className="block font-semibold mb-2">
+
+                    Estado
+
+                  </label>
+
+
+                  <select
+                    name="estado"
+                    value={form.estado}
+                    onChange={handleChange}
+                    className="w-full border rounded-xl p-3 bg-white outline-none focus:ring-2 focus:ring-blue-500"
+                  >
+
+                    <option value="">
+                      Seleccione estado
+                    </option>
+
+                    <option value="Pendiente">
+                      Pendiente
+                    </option>
+
+                    <option value="En proceso">
+                      En proceso
+                    </option>
+
+                    <option value="Completado">
+                      Completado
+                    </option>
+
+                  </select>
+
+                </div>
+
+
+                {/* ==============================
+                    FECHA
+                ============================== */}
+
+                <div>
+
+                  <label className="block font-semibold mb-2">
+
+                    Fecha
+
+                  </label>
+
+
+                  <input
+                    type="date"
+                    name="fecha"
+                    value={form.fecha}
+                    onChange={handleChange}
+                    className="w-full border rounded-xl p-3 outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+
+                </div>
+
+              </div>
+
+
+              {/* =================================
+                  AVISO
+              ================================= */}
+
+              <div className="mt-6 bg-blue-50 border border-blue-200 rounded-xl p-4">
+
+                <p className="text-blue-800 text-sm">
+
+                  <strong>
+                    Administrador:
+                  </strong>{" "}
+
+                  desde esta sección puedes registrar,
+                  editar y eliminar proyectos.
+
+                </p>
+
+              </div>
+
+
+              {/* =================================
+                  BOTONES
+              ================================= */}
+
+              <div className="flex justify-end gap-4 mt-6">
+
+
+                <button
+                  type="button"
+                  onClick={cerrarFormulario}
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl border border-gray-300 hover:bg-gray-100"
+                >
+
+                  <FaTimes />
+
+                  Cancelar
+
+                </button>
+
+
+                <button
+                  type="submit"
+                  className="flex items-center gap-2 px-6 py-3 rounded-xl bg-blue-700 hover:bg-blue-800 text-white"
+                >
+
+                  <FaPlus />
+
+                  {editingId
+                    ? "Guardar cambios"
+                    : "Crear Proyecto"
+                  }
+
+                </button>
+
+              </div>
+
+            </form>
+
+          </div>
+
+        </div>
+
+      )}
 
     </div>
 
-  )
+  );
 
 }
-
-export default Projects
